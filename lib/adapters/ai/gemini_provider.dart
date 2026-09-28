@@ -28,7 +28,7 @@ class GeminiProvider implements AiProvider {
   static const String keyName = 'gemini';
 
   /// Used when the parent has not picked one in settings.
-  static const String defaultModel = 'gemini-2.5-flash';
+  static const String defaultModel = 'gemini-3.8-flash';
   static const String _base =
       'https://generativelanguage.googleapis.com/v1beta/models';
 
@@ -95,7 +95,31 @@ class GeminiProvider implements AiProvider {
     return retryOnRateLimit(() => _generateOnce(prompt, key));
   }
 
+  /// Whether this model still lets us turn thinking off. Learned from the
+  /// API's own refusal rather than guessed from the model name, and remembered
+  /// so only the first chapter of a story pays for the discovery.
+  bool _mayDisableThinking = true;
+
   Future<StorySegment> _generateOnce(StoryPrompt prompt, String key) async {
+    try {
+      return await _post(prompt, key);
+    } on ProviderRequestException catch (e) {
+      // Gemini 3 pro answers `thinkingBudget: 0` with "Budget 0 is invalid.
+      // This model only works in thinking mode." — a 400 that would otherwise
+      // land as a generic fallback chapter for every single turn. Found by
+      // `tool/gemini_smoke.dart`: the list endpoint offers these models
+      // happily, and only a real generation shows the body is rejected.
+      if (e.statusCode != 400 ||
+          !_mayDisableThinking ||
+          !e.message.toLowerCase().contains('thinking')) {
+        rethrow;
+      }
+      _mayDisableThinking = false;
+      return _post(prompt, key);
+    }
+  }
+
+  Future<StorySegment> _post(StoryPrompt prompt, String key) async {
     final response = await _http.post(
       Uri.parse('$_base/$_model:generateContent'),
       headers: {'content-type': 'application/json', 'x-goog-api-key': key},
@@ -117,12 +141,13 @@ class GeminiProvider implements AiProvider {
           'responseMimeType': 'application/json',
           'responseSchema': _schema,
           'maxOutputTokens': _maxTokens,
-          // Turn OFF "thinking". gemini-2.5-flash otherwise spends part of the
-          // output-token budget on internal reasoning, which can truncate the
-          // JSON (finishReason MAX_TOKENS) → parse failure → generic fallback.
-          // This structured story task doesn't need it, and disabling it also
-          // makes generation noticeably faster.
-          'thinkingConfig': {'thinkingBudget': 0},
+          // Turn OFF "thinking" where the model allows it. A flash model
+          // otherwise spends part of the output-token budget on internal
+          // reasoning, which can truncate the JSON (finishReason MAX_TOKENS)
+          // → parse failure → generic fallback. This structured story task
+          // doesn't need it, and disabling it is noticeably faster. The pro
+          // models refuse to run without it; see [_mayDisableThinking].
+          if (_mayDisableThinking) 'thinkingConfig': {'thinkingBudget': 0},
         },
       }),
     );

@@ -10,7 +10,7 @@ import '../secrets/secret_store.dart';
 import 'tts_provider.dart';
 import 'tts_synthesizer.dart';
 
-/// Gemini TTS (`gemini-2.5-flash-preview-tts`, `responseModalities: [AUDIO]`).
+/// Gemini TTS (`gemini-3.8-flash-tts`, `responseModalities: [AUDIO]`).
 /// Returns raw 16-bit PCM which we wrap in a WAV container. Reuses the parent's
 /// Gemini key. See `docs/voice-tts.md`.
 class GeminiTtsSynthesizer implements TtsSynthesizer {
@@ -23,7 +23,7 @@ class GeminiTtsSynthesizer implements TtsSynthesizer {
        _http = httpClient ?? http.Client();
 
   /// Used when the grown-up hasn't chosen one in Voice setup.
-  static const String defaultModel = 'gemini-2.5-flash-preview-tts';
+  static const String defaultModel = 'gemini-3.8-flash-tts';
 
   static const String keyName = 'gemini';
   static const String _base =

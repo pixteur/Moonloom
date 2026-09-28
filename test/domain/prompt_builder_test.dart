@@ -5,6 +5,7 @@ import 'package:sleepytime/domain/models/child_profile.dart';
 import 'package:sleepytime/domain/models/interest.dart';
 import 'package:sleepytime/domain/models/series.dart';
 import 'package:sleepytime/domain/models/story_request.dart';
+import 'package:sleepytime/domain/models/story_segment.dart';
 import 'package:sleepytime/domain/prompt_builder.dart';
 
 void main() {
@@ -252,5 +253,88 @@ void main() {
     expect(p.user, contains('no title yet'));
     // The placeholder must never leak in as if it were the real title.
     expect(p.user, isNot(contains('Series: "Naming it…"')));
+  });
+
+  // The creator has always asked who the hero is and always saved the answer.
+  // It simply never reached the prompt, so a parent who typed "Crystal" got
+  // whatever name the model liked — and in one world, the same invented fox
+  // every single time. These pin the answer to the page.
+  group('the hero the grown-up chose', () {
+    StoryRequest heroReq({
+      required HeroMode mode,
+      String? heroName,
+      List<String> cast = const [],
+    }) {
+      return StoryRequest(
+        child: const ChildProfile(id: 'c1', displayName: 'Mia', age: 6),
+        series: Series(
+          id: 's1',
+          childId: 'c1',
+          title: 'Mystical Creature',
+          theme: StoryTheme.cozy,
+          seedSummary: 'A child who likes quiet puzzles.',
+          heroMode: mode,
+          heroName: heroName,
+        ),
+        intent: StoryIntent.dice,
+        cast: cast,
+      );
+    }
+
+    test('a named hero is named in the prompt', () {
+      final p = builder.build(
+        heroReq(mode: HeroMode.namedHero, heroName: 'Crystal'),
+      );
+      expect(p.user, contains('Crystal'));
+    });
+
+    test('a named hero outranks the cast inherited from the world', () {
+      // The real failure: an episode inherits "Pip" from its world, and the
+      // model keeps writing Pip as the lead however the hero was set.
+      final p = builder.build(
+        heroReq(
+          mode: HeroMode.namedHero,
+          heroName: 'Crystal',
+          cast: const ['Pip — a small brave fox'],
+        ),
+      );
+      final hero = p.user.indexOf('Crystal');
+      final cast = p.user.indexOf('Pip');
+      expect(hero, greaterThan(-1));
+      expect(cast, greaterThan(-1));
+      expect(hero, lessThan(cast), reason: 'the lead is set before the cast');
+      expect(p.user, contains('supporting cast'));
+    });
+
+    test('the child is the hero by name when that is the choice', () {
+      final p = builder.build(heroReq(mode: HeroMode.childAsHero));
+      expect(p.user, contains('Mia'));
+    });
+
+    test('a surprise hero is left to the model', () {
+      final p = builder.build(heroReq(mode: HeroMode.surprise));
+      expect(p.user, isNot(contains('The hero of this story')));
+    });
+
+    test('a named hero with no name given does not steer', () {
+      // The field can be left blank; an empty instruction would be worse than
+      // none, since "the hero is named " invites the model to fill the gap.
+      final p = builder.build(heroReq(mode: HeroMode.namedHero, heroName: ''));
+      expect(p.user, isNot(contains('The hero of this story')));
+    });
+
+    test('the editor is told the hero too, so a polish cannot rename them', () {
+      final request = heroReq(mode: HeroMode.namedHero, heroName: 'Crystal');
+      final p = builder.buildRefinement(
+        request,
+        const StorySegment(
+          storyText: 'Crystal lifted the lantern and the meadow turned gold.',
+          summary: 'Crystal finds a lantern.',
+          rating: AgeRating.little,
+        ),
+      );
+      expect(p.user, contains('Hero: Crystal'));
+      expect(p.user, contains('Never rename'));
+    });
   });
 }

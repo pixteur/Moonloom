@@ -15,6 +15,7 @@ import 'models/story_request.dart';
 import 'models/story_segment.dart';
 import 'prompt_builder.dart';
 import 'safety_guard.dart';
+import 'spoken_text.dart';
 
 /// Orchestrates one story turn end-to-end:
 /// gather context → build prompt → generate → SafetyGuard → (retry/fallback) →
@@ -244,8 +245,11 @@ class StoryEngine {
       seq: ctx.nextSeq,
       intent: intent,
       chosenTwist: chosenTwist,
-      text: safe.storyText,
-      summary: safe.summary,
+      // Asking the model to keep markup out works nearly always; the misses
+      // get read aloud to a child as "asterisk brillant asterisk". Enforced
+      // here so every path — draft, refined, or fallback — goes through it.
+      text: stripSpokenMarkup(safe.storyText),
+      summary: stripSpokenMarkup(safe.summary),
       title: _chapterTitle(safe.chapterTitle, ctx.recentBeats),
       rating: safe.rating,
       setting: safe.setting,

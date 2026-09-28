@@ -126,6 +126,7 @@ class PromptBuilder {
       user.writeln('Series: "${req.series.title}".');
     }
     user.writeln('Premise: ${req.series.seedSummary}');
+    _writeHero(user, req);
 
     if (req.worldPremise.trim().isNotEmpty) {
       user.writeln(
@@ -431,6 +432,11 @@ class PromptBuilder {
     if (req.series.title.trim().isNotEmpty && !req.series.autoTitle) {
       user.writeln('- Story title: "${req.series.title}"');
     }
+    // The editor is told that established facts beat the draft, so the hero's
+    // name belongs among them — otherwise a polish pass is free to rename the
+    // lead the drafting pass was just told to use.
+    final hero = _heroFact(req);
+    if (hero.isNotEmpty) user.writeln('- $hero');
     if (req.worldPremise.trim().isNotEmpty) {
       user.writeln('- World: ${req.worldPremise.trim()}');
     }
@@ -630,6 +636,62 @@ class PromptBuilder {
         'letter or visit someday.',
       );
     }
+  }
+
+  /// Who the story is about.
+  ///
+  /// The creator has always asked this — "The child", "A named hero", or a
+  /// surprise — and the answer has always been saved on the series. It was
+  /// never put in the prompt, so a parent who typed "Crystal" got whoever the
+  /// model felt like inventing, and no amount of asking again would change it.
+  ///
+  /// It is written after the premise and before the cast on purpose. An
+  /// episode inherits its world's recurring characters, and a model handed a
+  /// familiar cast will quietly keep using the hero it already knows — which
+  /// is how one invented fox became the lead of every story in a world. The
+  /// named hero is therefore stated as the lead *and* the cast list below is
+  /// framed as the supporting characters.
+  void _writeHero(StringBuffer user, StoryRequest req) {
+    final name = req.series.heroName?.trim() ?? '';
+    switch (req.series.heroMode) {
+      case HeroMode.namedHero when name.isNotEmpty:
+        user.writeln(
+          'The hero of this story is named $name. This is not a suggestion: '
+          '$name is the lead, appears in the first few sentences, and is '
+          'called $name throughout — never renamed, never a nickname, never '
+          'replaced by another character. Spell it exactly "$name". Anyone '
+          'else in the story, including any recurring character listed below, '
+          'is part of the supporting cast.',
+        );
+      case HeroMode.childAsHero:
+        final child = req.child.displayName.trim();
+        if (child.isEmpty) return;
+        user.writeln(
+          'The hero of this story is the child listening: $child, aged '
+          '${req.child.age}. Write $child as the lead, by that name, and give '
+          'them the choices that move the story. Anyone else, including any '
+          'recurring character listed below, is part of the supporting cast.',
+        );
+      case HeroMode.namedHero:
+      case HeroMode.surprise:
+        // No steer: inventing the lead is the point of "Surprise", and a
+        // named hero with a blank name is the same situation.
+        return;
+    }
+  }
+
+  /// The hero as a one-line fact, for the editor's continuity list.
+  String _heroFact(StoryRequest req) {
+    final name = req.series.heroName?.trim() ?? '';
+    return switch (req.series.heroMode) {
+      HeroMode.namedHero when name.isNotEmpty =>
+        'Hero: $name — the lead of this story, spelled exactly that way. '
+            'Never rename or replace them.',
+      HeroMode.childAsHero when req.child.displayName.trim().isNotEmpty =>
+        'Hero: ${req.child.displayName.trim()} — the lead of this story. '
+            'Never rename or replace them.',
+      _ => '',
+    };
   }
 
   String _intentLine(StoryRequest req) {
