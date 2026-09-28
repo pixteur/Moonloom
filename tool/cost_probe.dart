@@ -162,7 +162,7 @@ Future<void> main(List<String> args) async {
     );
   }
 
-  stdout.writeln('\n── one long ${chapters}-chapter story ──');
+  stdout.writeln('\n── one long $chapters-chapter story ──');
   stdout.writeln('  draft   in $draftIn  out $draftOut');
   stdout.writeln('  edit    in $editIn  out $editOut');
   stdout.writeln('  TOTAL   in ${draftIn + editIn}  out ${draftOut + editOut}');

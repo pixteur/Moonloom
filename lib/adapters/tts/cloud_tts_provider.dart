@@ -5,6 +5,7 @@ import 'package:audioplayers/audioplayers.dart' hide AudioCache;
 
 import '../../domain/models/narration.dart';
 import '../ai/rate_limit_retry.dart';
+import 'audio_polish.dart';
 import 'audio_cache.dart';
 import 'narrated_chunks.dart';
 import 'tts_provider.dart';
@@ -150,8 +151,13 @@ class CloudTtsProvider implements TtsProvider {
       ),
       cancelled: cancelled ?? () => false,
     );
-    await _cache?.put(key, bytes);
-    return bytes;
+    // Even the level and lengthen the paragraph breaks before anything sees
+    // this audio, so the cache, the exports and the Lunii pack all carry the
+    // same reading. Measured on real output: 18.8 dB of drift inside one
+    // request, and paragraph pauses no longer than sentence ones.
+    final polished = polishNarration(bytes);
+    await _cache?.put(key, polished);
+    return polished;
   }
 
   /// Warm the cache for [text] (the next chapter) without playing it, so paging
