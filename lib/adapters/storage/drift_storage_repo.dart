@@ -238,6 +238,7 @@ class DriftStorageRepo implements StorageRepo {
             theme: w.theme,
             premise: Value(w.premise),
             extraThemes: Value(_encodeThemes(w.extraThemes)),
+            voiceName: Value(w.voiceName),
             castChanges: Value(w.pendingCastChanges.encode()),
           ),
         );
@@ -255,6 +256,7 @@ class DriftStorageRepo implements StorageRepo {
     premise: r.premise,
     theme: r.theme,
     extraThemes: _decodeThemes(r.extraThemes),
+    voiceName: r.voiceName,
     pendingCastChanges: CastChanges.decode(r.castChanges),
   );
 

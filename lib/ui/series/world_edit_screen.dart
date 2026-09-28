@@ -7,6 +7,7 @@ import '../../domain/models/story_character.dart';
 import '../../domain/models/world.dart';
 import '../common/confirm_destructive.dart';
 import 'theme_picker.dart';
+import 'world_voice_picker.dart';
 
 /// The grown-up's workshop for a world: its name, what it's about, the flavours
 /// every future episode inherits, and the cast. Everything here changes the
@@ -24,6 +25,7 @@ class WorldEditScreen extends ConsumerStatefulWidget {
 class _WorldEditScreenState extends ConsumerState<WorldEditScreen> {
   late final _name = TextEditingController(text: widget.world.name);
   late final _premise = TextEditingController(text: widget.world.premise);
+  late String _voice = widget.world.voiceName;
   late List<StoryTheme> _themes = widget.world.allThemes;
   bool _saving = false;
 
@@ -43,6 +45,7 @@ class _WorldEditScreenState extends ConsumerState<WorldEditScreen> {
       premise: _premise.text.trim(),
       theme: _themes.first,
       extraThemes: _themes.skip(1).toList(),
+      voiceName: _voice,
     );
     await ref.read(worldServiceProvider).update(updated);
     ref.read(activeWorldProvider.notifier).select(updated);
@@ -85,6 +88,15 @@ class _WorldEditScreenState extends ConsumerState<WorldEditScreen> {
               helperText: 'Every episode is written to fit this',
             ),
           ),
+
+          const SizedBox(height: 24),
+          Text('Who tells the stories?', style: theme.textTheme.titleMedium),
+          const SizedBox(height: 8),
+          WorldVoicePicker(
+            value: _voice,
+            onChanged: (v) => setState(() => _voice = v),
+          ),
+          VoiceChangeNote(from: widget.world.voiceName, to: _voice),
 
           const SizedBox(height: 24),
           ThemePicker(

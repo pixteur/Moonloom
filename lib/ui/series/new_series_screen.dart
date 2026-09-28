@@ -10,6 +10,7 @@ import '../../domain/models/world.dart';
 import '../../domain/twist_deck.dart';
 import '../story/story_chapters_screen.dart';
 import 'theme_picker.dart';
+import 'world_voice_picker.dart';
 
 /// How a story handles language, as offered when it is created. Stored on the
 /// series as `bilingualEnabled` + `bilingualBlend`; [_LanguageMode.sprinkle]
@@ -42,6 +43,9 @@ class _NewSeriesScreenState extends ConsumerState<NewSeriesScreen> {
   final _heroName = TextEditingController();
   final _idea = TextEditingController();
   final _worldName = TextEditingController();
+
+  /// The voice a newly created world will use; empty means the parent's setting.
+  String _worldVoice = '';
 
   /// Up to [_maxThemes] flavours, in the order they were picked (the first is
   /// the lead theme).
@@ -134,6 +138,7 @@ class _NewSeriesScreenState extends ConsumerState<NewSeriesScreen> {
             name: name,
             theme: theme,
             extraThemes: extraThemes,
+            voiceName: _worldVoice,
           );
       worldId = world.id;
       ref.invalidate(worldsForChildProvider(child.id));
@@ -274,6 +279,19 @@ class _NewSeriesScreenState extends ConsumerState<NewSeriesScreen> {
                   labelText: 'World name (e.g. Splat the Cat)',
                   helperText: 'Add characters to the world afterwards',
                 ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Who tells the stories here?',
+                style: theme.textTheme.titleMedium,
+              ),
+              const SizedBox(height: 8),
+              // Chosen while the world is being made, so every episode in it
+              // keeps the same storyteller — which is most of what makes a
+              // world feel like a place rather than a folder.
+              WorldVoicePicker(
+                value: _worldVoice,
+                onChanged: (v) => setState(() => _worldVoice = v),
               ),
             ],
           ],

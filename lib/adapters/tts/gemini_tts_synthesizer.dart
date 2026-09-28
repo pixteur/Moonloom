@@ -9,6 +9,7 @@ import '../ai/story_segment_codec.dart';
 import '../secrets/secret_store.dart';
 import 'tts_provider.dart';
 import 'tts_synthesizer.dart';
+import 'voice_catalog.dart';
 
 /// Gemini TTS (`gemini-3.8-flash-tts`, `responseModalities: [AUDIO]`).
 /// Returns raw 16-bit PCM which we wrap in a WAV container. Reuses the parent's
@@ -28,14 +29,10 @@ class GeminiTtsSynthesizer implements TtsSynthesizer {
   static const String keyName = 'gemini';
   static const String _base =
       'https://generativelanguage.googleapis.com/v1beta/models';
-  static const List<String> voices = [
-    'Kore',
-    'Aoede',
-    'Puck',
-    'Zephyr',
-    'Charon',
-    'Fenrir',
-  ];
+
+  /// Every prebuilt voice Gemini offers, bedtime-suited first. The catalogue
+  /// carries the friendly names; this is just the ids, in the same order.
+  static List<String> get voices => [for (final v in geminiVoices) v.id];
 
   final SecretStore _secrets;
   final http.Client _http;

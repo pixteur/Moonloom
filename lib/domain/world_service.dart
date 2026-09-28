@@ -22,6 +22,7 @@ class WorldService {
     String premise = '',
     StoryTheme theme = StoryTheme.cozy,
     List<StoryTheme> extraThemes = const [],
+    String voiceName = '',
   }) async {
     final world = World(
       id: _uuid.v4(),
@@ -30,6 +31,7 @@ class WorldService {
       premise: premise,
       theme: theme,
       extraThemes: extraThemes,
+      voiceName: voiceName,
     );
     await _repo.saveWorld(world);
     return world;

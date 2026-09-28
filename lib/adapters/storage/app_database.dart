@@ -87,6 +87,10 @@ class Worlds extends Table {
   /// Up to two extra themes blended with [theme], as comma-separated enum names.
   TextColumn get extraThemes => text().withDefault(const Constant(''))();
 
+  /// The voice that tells every story in this world; empty means the parent's
+  /// setting. Only the voice name, never the engine — see World.voiceName.
+  TextColumn get voiceName => text().withDefault(const Constant(''))();
+
   /// Cast edits (arrivals/departures) the next story must acknowledge, as JSON.
   TextColumn get castChanges => text().withDefault(const Constant('{}'))();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
@@ -232,7 +236,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
 
   /// The library's file name, under the user's documents folder.
   static const String fileName = 'sleepytime.sqlite';
@@ -326,6 +330,15 @@ class AppDatabase extends _$AppDatabase {
           () => m.addColumn(seriesTable, seriesTable.baseLanguage),
         );
       }
+      // v9 → v10: a world keeps its own storyteller, so every episode in it
+      // sounds like the same person.
+      if (from < 10) {
+        await _addColumnIfMissing(
+          'worlds',
+          'voice_name',
+          () => m.addColumn(worlds, worlds.voiceName),
+        );
+      }
     },
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON');
@@ -362,6 +375,7 @@ class AppDatabase extends _$AppDatabase {
         'base_language',
         'TEXT',
       );
+      await _ensureColumn('worlds', 'voice_name', "TEXT NOT NULL DEFAULT ''");
     },
   );
 

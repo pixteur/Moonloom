@@ -346,12 +346,76 @@ final savedNarrationProvider = Provider<SavedNarration>(
 /// gap-free and don't re-hit the cloud. Shared across voice-provider rebuilds.
 final audioCacheProvider = Provider<AudioCache>((ref) => FileAudioCache());
 
+/// The voice to read in, once the world has had its say.
+///
+/// A world keeps its own storyteller so every episode sounds like the same
+/// person — that is most of what makes a world feel like a place rather than a
+/// folder. Only the **name** is overridden: the engine stays whatever the
+/// grown-up configured, because an engine needs a key and a consent, and a
+/// world that could switch engines would be a world that could start spending
+/// money on a provider nobody agreed to.
+///
+/// A world with no voice of its own, a device voice, or a name that does not
+/// belong to the current engine all fall through to the parent's setting — the
+/// last of those matters when the engine is changed after a world was named.
+final storyVoiceProvider = Provider<VoiceConfig>((ref) {
+  final cfg = ref.watch(voiceConfigProvider);
+  final world = ref.watch(activeWorldProvider);
+  final wanted = world?.voiceName.trim() ?? '';
+  if (wanted.isEmpty || cfg.engine == VoiceEngine.device) return cfg;
+  if (!voicesFor(cfg.engine).contains(wanted)) return cfg;
+  return VoiceConfig(cfg.engine, wanted, cfg.model);
+});
+
+/// The voices an engine offers by name. One list, used by the parent's picker
+/// in settings and by the child-facing one on a world.
+List<String> voicesFor(VoiceEngine engine) => switch (engine) {
+  VoiceEngine.gemini => GeminiTtsSynthesizer.voices,
+  VoiceEngine.openai => OpenAiTtsSynthesizer.voices,
+  VoiceEngine.elevenlabs => ElevenLabsTtsSynthesizer.presets.values.toList(),
+  VoiceEngine.device => const [],
+};
+
+/// A reader for one named voice, for auditioning it.
+///
+/// Separate from [ttsProvider] on purpose: previewing a voice must not stop
+/// the story currently being read, and must not become the story's voice just
+/// because somebody tapped it. Shares the same cache, so hearing a voice twice
+/// costs once.
+final voicePreviewProvider = Provider.family<TtsProvider, String>((
+  ref,
+  voiceName,
+) {
+  final cfg = ref.watch(voiceConfigProvider);
+  final provider = _readerFor(
+    ref,
+    VoiceConfig(cfg.engine, voiceName, cfg.model),
+  );
+  ref.onDispose(provider.dispose);
+  return provider;
+});
+
 /// The active voice reader — device TTS or a cloud engine. Disposed on rebuild.
 final ttsProvider = Provider<TtsProvider>((ref) {
-  final cfg = ref.watch(voiceConfigProvider);
+  final cfg = ref.watch(storyVoiceProvider);
+  final provider = _readerFor(ref, cfg);
+  ref.onDispose(provider.dispose);
+  // Note the voice so a later cache lookup can still find what it recorded.
+  // Fire-and-forget: this only ever adds to a list, and being a moment late
+  // costs nothing — audio cannot be cached before the provider exists.
+  if (cfg.engine != VoiceEngine.device) {
+    AppPrefs.open().then(
+      (p) => p.rememberVoiceSignature(provider.voiceSignature),
+    );
+  }
+  return provider;
+});
+
+/// Build a reader for one configuration. The caller owns disposing it.
+TtsProvider _readerFor(Ref ref, VoiceConfig cfg) {
   final secrets = ref.watch(secretStoreProvider);
   final cache = ref.watch(audioCacheProvider);
-  final provider = switch (cfg.engine) {
+  return switch (cfg.engine) {
     VoiceEngine.openai => CloudTtsProvider(
       OpenAiTtsSynthesizer(
         secrets: secrets,
@@ -389,17 +453,7 @@ final ttsProvider = Provider<TtsProvider>((ref) {
     ),
     VoiceEngine.device => DeviceTtsProvider(),
   };
-  ref.onDispose(provider.dispose);
-  // Note the voice so a later cache lookup can still find what it recorded.
-  // Fire-and-forget: this only ever adds to a list, and being a moment late
-  // costs nothing — audio cannot be cached before the provider exists.
-  if (cfg.engine != VoiceEngine.device) {
-    AppPrefs.open().then(
-      (p) => p.rememberVoiceSignature(provider.voiceSignature),
-    );
-  }
-  return provider;
-});
+}
 
 // ─── Storage ──────────────────────────────────────────────────────────
 

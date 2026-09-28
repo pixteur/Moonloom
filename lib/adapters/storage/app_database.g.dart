@@ -1832,6 +1832,18 @@ class $WorldsTable extends Worlds with TableInfo<$WorldsTable, WorldRow> {
     requiredDuringInsert: false,
     defaultValue: const Constant(''),
   );
+  static const VerificationMeta _voiceNameMeta = const VerificationMeta(
+    'voiceName',
+  );
+  @override
+  late final GeneratedColumn<String> voiceName = GeneratedColumn<String>(
+    'voice_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
   static const VerificationMeta _castChangesMeta = const VerificationMeta(
     'castChanges',
   );
@@ -1864,6 +1876,7 @@ class $WorldsTable extends Worlds with TableInfo<$WorldsTable, WorldRow> {
     premise,
     theme,
     extraThemes,
+    voiceName,
     castChanges,
     createdAt,
   ];
@@ -1913,6 +1926,12 @@ class $WorldsTable extends Worlds with TableInfo<$WorldsTable, WorldRow> {
           data['extra_themes']!,
           _extraThemesMeta,
         ),
+      );
+    }
+    if (data.containsKey('voice_name')) {
+      context.handle(
+        _voiceNameMeta,
+        voiceName.isAcceptableOrUnknown(data['voice_name']!, _voiceNameMeta),
       );
     }
     if (data.containsKey('cast_changes')) {
@@ -1965,6 +1984,10 @@ class $WorldsTable extends Worlds with TableInfo<$WorldsTable, WorldRow> {
         DriftSqlType.string,
         data['${effectivePrefix}extra_themes'],
       )!,
+      voiceName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}voice_name'],
+      )!,
       castChanges: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}cast_changes'],
@@ -1995,6 +2018,10 @@ class WorldRow extends DataClass implements Insertable<WorldRow> {
   /// Up to two extra themes blended with [theme], as comma-separated enum names.
   final String extraThemes;
 
+  /// The voice that tells every story in this world; empty means the parent's
+  /// setting. Only the voice name, never the engine — see World.voiceName.
+  final String voiceName;
+
   /// Cast edits (arrivals/departures) the next story must acknowledge, as JSON.
   final String castChanges;
   final DateTime createdAt;
@@ -2005,6 +2032,7 @@ class WorldRow extends DataClass implements Insertable<WorldRow> {
     required this.premise,
     required this.theme,
     required this.extraThemes,
+    required this.voiceName,
     required this.castChanges,
     required this.createdAt,
   });
@@ -2019,6 +2047,7 @@ class WorldRow extends DataClass implements Insertable<WorldRow> {
       map['theme'] = Variable<int>($WorldsTable.$convertertheme.toSql(theme));
     }
     map['extra_themes'] = Variable<String>(extraThemes);
+    map['voice_name'] = Variable<String>(voiceName);
     map['cast_changes'] = Variable<String>(castChanges);
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
@@ -2032,6 +2061,7 @@ class WorldRow extends DataClass implements Insertable<WorldRow> {
       premise: Value(premise),
       theme: Value(theme),
       extraThemes: Value(extraThemes),
+      voiceName: Value(voiceName),
       castChanges: Value(castChanges),
       createdAt: Value(createdAt),
     );
@@ -2051,6 +2081,7 @@ class WorldRow extends DataClass implements Insertable<WorldRow> {
         serializer.fromJson<int>(json['theme']),
       ),
       extraThemes: serializer.fromJson<String>(json['extraThemes']),
+      voiceName: serializer.fromJson<String>(json['voiceName']),
       castChanges: serializer.fromJson<String>(json['castChanges']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
@@ -2067,6 +2098,7 @@ class WorldRow extends DataClass implements Insertable<WorldRow> {
         $WorldsTable.$convertertheme.toJson(theme),
       ),
       'extraThemes': serializer.toJson<String>(extraThemes),
+      'voiceName': serializer.toJson<String>(voiceName),
       'castChanges': serializer.toJson<String>(castChanges),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
@@ -2079,6 +2111,7 @@ class WorldRow extends DataClass implements Insertable<WorldRow> {
     String? premise,
     StoryTheme? theme,
     String? extraThemes,
+    String? voiceName,
     String? castChanges,
     DateTime? createdAt,
   }) => WorldRow(
@@ -2088,6 +2121,7 @@ class WorldRow extends DataClass implements Insertable<WorldRow> {
     premise: premise ?? this.premise,
     theme: theme ?? this.theme,
     extraThemes: extraThemes ?? this.extraThemes,
+    voiceName: voiceName ?? this.voiceName,
     castChanges: castChanges ?? this.castChanges,
     createdAt: createdAt ?? this.createdAt,
   );
@@ -2101,6 +2135,7 @@ class WorldRow extends DataClass implements Insertable<WorldRow> {
       extraThemes: data.extraThemes.present
           ? data.extraThemes.value
           : this.extraThemes,
+      voiceName: data.voiceName.present ? data.voiceName.value : this.voiceName,
       castChanges: data.castChanges.present
           ? data.castChanges.value
           : this.castChanges,
@@ -2117,6 +2152,7 @@ class WorldRow extends DataClass implements Insertable<WorldRow> {
           ..write('premise: $premise, ')
           ..write('theme: $theme, ')
           ..write('extraThemes: $extraThemes, ')
+          ..write('voiceName: $voiceName, ')
           ..write('castChanges: $castChanges, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
@@ -2131,6 +2167,7 @@ class WorldRow extends DataClass implements Insertable<WorldRow> {
     premise,
     theme,
     extraThemes,
+    voiceName,
     castChanges,
     createdAt,
   );
@@ -2144,6 +2181,7 @@ class WorldRow extends DataClass implements Insertable<WorldRow> {
           other.premise == this.premise &&
           other.theme == this.theme &&
           other.extraThemes == this.extraThemes &&
+          other.voiceName == this.voiceName &&
           other.castChanges == this.castChanges &&
           other.createdAt == this.createdAt);
 }
@@ -2155,6 +2193,7 @@ class WorldsCompanion extends UpdateCompanion<WorldRow> {
   final Value<String> premise;
   final Value<StoryTheme> theme;
   final Value<String> extraThemes;
+  final Value<String> voiceName;
   final Value<String> castChanges;
   final Value<DateTime> createdAt;
   final Value<int> rowid;
@@ -2165,6 +2204,7 @@ class WorldsCompanion extends UpdateCompanion<WorldRow> {
     this.premise = const Value.absent(),
     this.theme = const Value.absent(),
     this.extraThemes = const Value.absent(),
+    this.voiceName = const Value.absent(),
     this.castChanges = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -2176,6 +2216,7 @@ class WorldsCompanion extends UpdateCompanion<WorldRow> {
     this.premise = const Value.absent(),
     required StoryTheme theme,
     this.extraThemes = const Value.absent(),
+    this.voiceName = const Value.absent(),
     this.castChanges = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -2190,6 +2231,7 @@ class WorldsCompanion extends UpdateCompanion<WorldRow> {
     Expression<String>? premise,
     Expression<int>? theme,
     Expression<String>? extraThemes,
+    Expression<String>? voiceName,
     Expression<String>? castChanges,
     Expression<DateTime>? createdAt,
     Expression<int>? rowid,
@@ -2201,6 +2243,7 @@ class WorldsCompanion extends UpdateCompanion<WorldRow> {
       if (premise != null) 'premise': premise,
       if (theme != null) 'theme': theme,
       if (extraThemes != null) 'extra_themes': extraThemes,
+      if (voiceName != null) 'voice_name': voiceName,
       if (castChanges != null) 'cast_changes': castChanges,
       if (createdAt != null) 'created_at': createdAt,
       if (rowid != null) 'rowid': rowid,
@@ -2214,6 +2257,7 @@ class WorldsCompanion extends UpdateCompanion<WorldRow> {
     Value<String>? premise,
     Value<StoryTheme>? theme,
     Value<String>? extraThemes,
+    Value<String>? voiceName,
     Value<String>? castChanges,
     Value<DateTime>? createdAt,
     Value<int>? rowid,
@@ -2225,6 +2269,7 @@ class WorldsCompanion extends UpdateCompanion<WorldRow> {
       premise: premise ?? this.premise,
       theme: theme ?? this.theme,
       extraThemes: extraThemes ?? this.extraThemes,
+      voiceName: voiceName ?? this.voiceName,
       castChanges: castChanges ?? this.castChanges,
       createdAt: createdAt ?? this.createdAt,
       rowid: rowid ?? this.rowid,
@@ -2254,6 +2299,9 @@ class WorldsCompanion extends UpdateCompanion<WorldRow> {
     if (extraThemes.present) {
       map['extra_themes'] = Variable<String>(extraThemes.value);
     }
+    if (voiceName.present) {
+      map['voice_name'] = Variable<String>(voiceName.value);
+    }
     if (castChanges.present) {
       map['cast_changes'] = Variable<String>(castChanges.value);
     }
@@ -2275,6 +2323,7 @@ class WorldsCompanion extends UpdateCompanion<WorldRow> {
           ..write('premise: $premise, ')
           ..write('theme: $theme, ')
           ..write('extraThemes: $extraThemes, ')
+          ..write('voiceName: $voiceName, ')
           ..write('castChanges: $castChanges, ')
           ..write('createdAt: $createdAt, ')
           ..write('rowid: $rowid')
@@ -6779,6 +6828,7 @@ typedef $$WorldsTableCreateCompanionBuilder =
       Value<String> premise,
       required StoryTheme theme,
       Value<String> extraThemes,
+      Value<String> voiceName,
       Value<String> castChanges,
       Value<DateTime> createdAt,
       Value<int> rowid,
@@ -6791,6 +6841,7 @@ typedef $$WorldsTableUpdateCompanionBuilder =
       Value<String> premise,
       Value<StoryTheme> theme,
       Value<String> extraThemes,
+      Value<String> voiceName,
       Value<String> castChanges,
       Value<DateTime> createdAt,
       Value<int> rowid,
@@ -6888,6 +6939,11 @@ class $$WorldsTableFilterComposer
 
   ColumnFilters<String> get extraThemes => $composableBuilder(
     column: $table.extraThemes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get voiceName => $composableBuilder(
+    column: $table.voiceName,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -7009,6 +7065,11 @@ class $$WorldsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get voiceName => $composableBuilder(
+    column: $table.voiceName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get castChanges => $composableBuilder(
     column: $table.castChanges,
     builder: (column) => ColumnOrderings(column),
@@ -7068,6 +7129,9 @@ class $$WorldsTableAnnotationComposer
     column: $table.extraThemes,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get voiceName =>
+      $composableBuilder(column: $table.voiceName, builder: (column) => column);
 
   GeneratedColumn<String> get castChanges => $composableBuilder(
     column: $table.castChanges,
@@ -7189,6 +7253,7 @@ class $$WorldsTableTableManager
                 Value<String> premise = const Value.absent(),
                 Value<StoryTheme> theme = const Value.absent(),
                 Value<String> extraThemes = const Value.absent(),
+                Value<String> voiceName = const Value.absent(),
                 Value<String> castChanges = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -7199,6 +7264,7 @@ class $$WorldsTableTableManager
                 premise: premise,
                 theme: theme,
                 extraThemes: extraThemes,
+                voiceName: voiceName,
                 castChanges: castChanges,
                 createdAt: createdAt,
                 rowid: rowid,
@@ -7211,6 +7277,7 @@ class $$WorldsTableTableManager
                 Value<String> premise = const Value.absent(),
                 required StoryTheme theme,
                 Value<String> extraThemes = const Value.absent(),
+                Value<String> voiceName = const Value.absent(),
                 Value<String> castChanges = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -7221,6 +7288,7 @@ class $$WorldsTableTableManager
                 premise: premise,
                 theme: theme,
                 extraThemes: extraThemes,
+                voiceName: voiceName,
                 castChanges: castChanges,
                 createdAt: createdAt,
                 rowid: rowid,

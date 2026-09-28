@@ -12,6 +12,7 @@ class World {
     this.premise = '',
     this.theme = StoryTheme.cozy,
     this.extraThemes = const [],
+    this.voiceName = '',
     this.pendingCastChanges = CastChanges.none,
   });
 
@@ -34,6 +35,21 @@ class World {
   /// [theme] plus [extraThemes], in the order they were picked.
   List<StoryTheme> get allThemes => [theme, ...extraThemes];
 
+  /// The voice that tells every story in this world. Empty means "whatever the
+  /// grown-up chose in settings".
+  ///
+  /// A world is the thing a child recognises — the same place, the same
+  /// friends — and a storyteller who changes between episodes breaks that more
+  /// than a changed colour would. Only the voice *name* lives here, never the
+  /// engine: engines need a key and a consent, which are a parent's business,
+  /// while a voice is a name a child can choose by ear.
+  ///
+  /// Narration is cached per voice, so changing this leaves the episodes
+  /// already recorded matching the old one. Nothing is lost — `SavedNarration`
+  /// still finds them — but the next chapter is recorded afresh, which is why
+  /// the picker says so out loud.
+  final String voiceName;
+
   /// Cast edits the next story still has to acknowledge (arrivals to introduce,
   /// departures to write out gently). Cleared once a chapter has used them.
   final CastChanges pendingCastChanges;
@@ -43,6 +59,7 @@ class World {
     String? premise,
     StoryTheme? theme,
     List<StoryTheme>? extraThemes,
+    String? voiceName,
     CastChanges? pendingCastChanges,
   }) => World(
     id: id,
@@ -51,6 +68,7 @@ class World {
     premise: premise ?? this.premise,
     theme: theme ?? this.theme,
     extraThemes: extraThemes ?? this.extraThemes,
+    voiceName: voiceName ?? this.voiceName,
     pendingCastChanges: pendingCastChanges ?? this.pendingCastChanges,
   );
 }
