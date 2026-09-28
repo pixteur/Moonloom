@@ -17,7 +17,9 @@ void main(List<String> args) {
   final at = args.indexOf('--db');
   final path = at >= 0 && at + 1 < args.length
       ? args[at + 1]
-      : '${Platform.environment['USERPROFILE']}\Documents\sleepytime.sqlite';
+      : r''
+            '${Platform.environment['USERPROFILE']}'
+            r'\Documents\sleepytime.sqlite';
   final db = sqlite3.open(path, mode: OpenMode.readOnly);
 
   final version = db.select('pragma user_version').first['user_version'];
