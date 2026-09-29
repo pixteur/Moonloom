@@ -67,10 +67,7 @@ class PromptBuilder {
                   'story. Bring everything to a warm, satisfying close now, tie '
                   'off the open threads, end peacefully and ready for sleep, and '
                   'set "is_final" to true.'
-            : 'Tell ONE complete bedtime story across '
-                  '${req.minChapters}–${req.maxChapters} short chapters. This '
-                  'is chapter ${req.chapterNumber} of at least '
-                  '${req.minChapters}. Each chapter should end on a gentle, '
+            : '${_lengthBrief(req)} Each chapter should end on a gentle, '
                   'calm note.'
                   '${req.mayNotEndYet ? " There are at least "
                             "${req.chaptersRemaining} more to come, so do NOT "
@@ -692,6 +689,27 @@ class PromptBuilder {
             'Never rename or replace them.',
       _ => '',
     };
+  }
+
+  /// How many chapters this story owes, and why.
+  ///
+  /// A long story is exactly seven — one for each night of the week — so its
+  /// floor and ceiling are the same number, and "across 7–7 short chapters"
+  /// reads like a typo rather than an instruction. Worth saying properly,
+  /// because the reason is itself useful to the model: a story that must land
+  /// on chapter seven can be paced for seven, where a range invites the
+  /// shortest thing that satisfies it.
+  String _lengthBrief(StoryRequest req) {
+    if (req.minChapters == req.maxChapters) {
+      return 'Tell ONE complete bedtime story in exactly ${req.maxChapters} '
+          'short chapters — one for each night of the week. Pace it for that: '
+          'there is room to let things breathe, and the ending must arrive on '
+          'chapter ${req.maxChapters}, neither before nor after. This is '
+          'chapter ${req.chapterNumber} of ${req.maxChapters}.';
+    }
+    return 'Tell ONE complete bedtime story across '
+        '${req.minChapters}–${req.maxChapters} short chapters. This is '
+        'chapter ${req.chapterNumber} of at least ${req.minChapters}.';
   }
 
   String _intentLine(StoryRequest req) {

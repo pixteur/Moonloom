@@ -295,9 +295,11 @@ void main() {
     expect(saved.last.isFinal, isTrue);
   });
 
-  test('a long story owes all six chapters, a short one three', () async {
+  test('a long story is a week of them, a short one three', () async {
     // "Long" has to mean long: asking for long stories and getting two
-    // chapters is being told one thing and given another.
+    // chapters is being told one thing and given another. Long is now exactly
+    // seven — one a night, Monday to Sunday — so it is stated as a count
+    // rather than a floor, and the reason travels with it.
     Future<String> promptFor(DetailLevel level) async {
       final ai = _RecordingProvider();
       await StoryEngine(ai: ai, repo: repo).takeTurn(
@@ -308,9 +310,110 @@ void main() {
       return ai.prompt!.system;
     }
 
-    expect(await promptFor(DetailLevel.long), contains('of at least 6'));
+    final long = await promptFor(DetailLevel.long);
+    expect(long, contains('exactly 7 short chapters'));
+    expect(long, contains('one for each night of the week'));
+    expect(long, isNot(contains('7–7')));
+
     expect(await promptFor(DetailLevel.medium), contains('of at least 4'));
     expect(await promptFor(DetailLevel.short), contains('of at least 3'));
+  });
+
+  group('a long story is exactly a week', () {
+    // Both bounds are enforced in code, not asked for in the prompt. Asking
+    // alone is what produced two-chapter "long" stories: a model handed a
+    // range will take the shortest end of it, and a model told to keep going
+    // will keep going. So the floor overrules an early ending and the ceiling
+    // forces a late one, and neither depends on the model cooperating.
+    test(
+      'it cannot finish early, however final the model says it is',
+      () async {
+        final engine = StoryEngine(ai: _FinalProvider(), repo: repo);
+        final longReader = child.copyWith(detailLevel: DetailLevel.long);
+        var beat = await engine.takeTurn(
+          child: longReader,
+          series: series,
+          intent: StoryIntent.dice,
+        );
+        final endings = <int>[];
+        for (var i = 1; i < 7; i++) {
+          if (beat.isFinal) endings.add(beat.seq);
+          beat = await engine.takeTurn(
+            child: longReader,
+            series: series,
+            intent: StoryIntent.continued,
+          );
+        }
+        // Every chapter claimed to be the last; only the seventh was allowed to
+        // be, and the six before it were overruled.
+        expect(endings, isEmpty);
+        expect(beat.seq, 6); // 0-based: the seventh chapter
+        expect(beat.isFinal, isTrue);
+      },
+    );
+
+    test('it cannot run past seven, however much the model wants to', () async {
+      final engine = StoryEngine(ai: _NeverEndsProvider(), repo: repo);
+      final longReader = child.copyWith(detailLevel: DetailLevel.long);
+      Beat beat = await engine.takeTurn(
+        child: longReader,
+        series: series,
+        intent: StoryIntent.dice,
+      );
+      for (var i = 0; i < 12 && !beat.isFinal; i++) {
+        beat = await engine.takeTurn(
+          child: longReader,
+          series: series,
+          intent: StoryIntent.continued,
+        );
+      }
+      expect(beat.isFinal, isTrue);
+      expect(beat.seq, 6);
+      // A forced ending still ties off, or a child is left on a hook with no
+      // chapter to resolve it.
+      expect(beat.openThreads, isEmpty);
+    });
+
+    test('a medium story still ends before a long one', () async {
+      final engine = StoryEngine(ai: _NeverEndsProvider(), repo: repo);
+      Beat beat = await engine.takeTurn(
+        child: child.copyWith(detailLevel: DetailLevel.medium),
+        series: series,
+        intent: StoryIntent.dice,
+      );
+      for (var i = 0; i < 12 && !beat.isFinal; i++) {
+        beat = await engine.takeTurn(
+          child: child.copyWith(detailLevel: DetailLevel.medium),
+          series: series,
+          intent: StoryIntent.continued,
+        );
+      }
+      expect(beat.seq, 4); // five chapters
+    });
+
+    test('an explicit cap still overrules the length', () async {
+      // The cap exists to stop runaway generation burning through quota, so
+      // it has to win even over a length whose floor is higher than it.
+      final engine = StoryEngine(
+        ai: _NeverEndsProvider(),
+        repo: repo,
+        maxChapters: 2,
+      );
+      Beat beat = await engine.takeTurn(
+        child: child.copyWith(detailLevel: DetailLevel.long),
+        series: series,
+        intent: StoryIntent.dice,
+      );
+      for (var i = 0; i < 6 && !beat.isFinal; i++) {
+        beat = await engine.takeTurn(
+          child: child.copyWith(detailLevel: DetailLevel.long),
+          series: series,
+          intent: StoryIntent.continued,
+        );
+      }
+      expect(beat.seq, 1);
+      expect(beat.isFinal, isTrue);
+    });
   });
 
   test('naming the story also names the world it was created with', () async {

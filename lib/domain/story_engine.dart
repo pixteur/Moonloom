@@ -32,7 +32,7 @@ class StoryEngine {
     SafetyGuard safetyGuard = const SafetyGuard(),
     List<String> bannedThemes = BannedThemes.defaults,
     int maxRetries = 2,
-    int maxChapters = 6,
+    int maxChapters = 7,
     int? minChapters,
     bool refinePass = true,
     Uuid? uuid,
@@ -65,15 +65,39 @@ class StoryEngine {
   ///
   /// "Long" means long: a child who asked for long stories and got two
   /// chapters was told one thing and given another, and the model will
-  /// happily resolve everything early if nothing stops it. So a long story
-  /// runs the full six, and a short one is allowed to be short.
+  /// happily resolve everything early if nothing stops it. A long story is
+  /// therefore **exactly seven** — one chapter a night, Monday to Sunday —
+  /// with the floor and the ceiling set to the same number so it can neither
+  /// finish early nor run on into a second week.
+  /// Clamped to [_maxChapters], which is the one bound nothing may exceed: it
+  /// exists to stop runaway generation burning through quota, so a caller
+  /// capping a story at three chapters must get three even from a length whose
+  /// floor is higher. Without this the ceiling below computes `5.clamp(4, 3)`,
+  /// an invalid range.
   int _floorFor(DetailLevel level) =>
-      _minChapters ??
-      switch (level) {
-        DetailLevel.short => 3,
-        DetailLevel.medium => 4,
-        DetailLevel.long => _maxChapters,
-      };
+      (_minChapters ??
+              switch (level) {
+                DetailLevel.short => 3,
+                DetailLevel.medium => 4,
+                DetailLevel.long => _weekOfChapters,
+              })
+          .clamp(1, _maxChapters);
+
+  /// The last chapter a story of this length may have.
+  ///
+  /// Per length rather than one global number, because "at most seven" is
+  /// only right for the length that wants seven. [_maxChapters] stays as the
+  /// absolute ceiling above all of them — it exists to stop runaway
+  /// generation burning through quota when a model will not conclude, and
+  /// nothing here may exceed it.
+  int _ceilingFor(DetailLevel level) => switch (level) {
+    DetailLevel.short => 4,
+    DetailLevel.medium => 5,
+    DetailLevel.long => _weekOfChapters,
+  }.clamp(_floorFor(level), _maxChapters);
+
+  /// A week of bedtimes. The point of a long story is that it lasts one.
+  static const int _weekOfChapters = 7;
 
   /// Whether a generated chapter gets a second, editorial pass before it is
   /// saved. Costs one extra call per chapter, so tests turn it off.
@@ -190,7 +214,7 @@ class StoryEngine {
       interests: interests,
       chosenTwist: chosenTwist,
       chapterNumber: ctx.nextSeq + 1,
-      maxChapters: _maxChapters,
+      maxChapters: _ceilingFor(child.detailLevel),
       minChapters: _floorFor(child.detailLevel),
       worldPremise: world?.premise ?? '',
       cast: cast,

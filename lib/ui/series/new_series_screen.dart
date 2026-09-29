@@ -335,13 +335,28 @@ class _NewSeriesScreenState extends ConsumerState<NewSeriesScreen> {
           ],
 
           const SizedBox(height: 24),
-          Text('Story length', style: theme.textTheme.titleMedium),
+          Text('How many nights?', style: theme.textTheme.titleMedium),
           const SizedBox(height: 8),
           SegmentedButton<DetailLevel>(
             segments: const [
-              ButtonSegment(value: DetailLevel.short, label: Text('Short')),
-              ButtonSegment(value: DetailLevel.medium, label: Text('Medium')),
-              ButtonSegment(value: DetailLevel.long, label: Text('Long')),
+              // Chapter counts, not adjectives. "Long" told a grown-up
+              // nothing about how many nights it would last, which is the
+              // only thing they are actually choosing between.
+              ButtonSegment(
+                value: DetailLevel.short,
+                label: Text('Short'),
+                tooltip: '3 to 4 chapters',
+              ),
+              ButtonSegment(
+                value: DetailLevel.medium,
+                label: Text('Medium'),
+                tooltip: '4 to 5 chapters',
+              ),
+              ButtonSegment(
+                value: DetailLevel.long,
+                label: Text('A week'),
+                tooltip: '7 chapters — one a night',
+              ),
             ],
             selected: {child?.detailLevel ?? DetailLevel.medium},
             onSelectionChanged: _creating ? null : (s) => _setLength(s.first),
