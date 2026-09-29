@@ -7,6 +7,7 @@ class StoryCharacter {
     required this.worldId,
     required this.name,
     this.description = '',
+    this.sheetFileKey = '',
   });
 
   final String id;
@@ -18,13 +19,23 @@ class StoryCharacter {
   /// A short description of who they are, woven into the prompt.
   final String description;
 
-  StoryCharacter copyWith({String? name, String? description}) =>
-      StoryCharacter(
-        id: id,
-        worldId: worldId,
-        name: name ?? this.name,
-        description: description ?? this.description,
-      );
+  /// A reference drawing of this character, handed to the image model every
+  /// time they appear. A description cannot pin a face down — "a small white
+  /// fox" describes a thousand foxes, and the pictures proved it — so the
+  /// drawing is the specification and the words are only the brief for it.
+  final String sheetFileKey;
+
+  StoryCharacter copyWith({
+    String? name,
+    String? description,
+    String? sheetFileKey,
+  }) => StoryCharacter(
+    id: id,
+    worldId: worldId,
+    name: name ?? this.name,
+    description: description ?? this.description,
+    sheetFileKey: sheetFileKey ?? this.sheetFileKey,
+  );
 
   /// One-line form for prompts, e.g. "Splat — a big black cat who loves...".
   String get promptLine =>

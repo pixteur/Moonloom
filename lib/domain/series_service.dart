@@ -41,6 +41,7 @@ class SeriesService {
     bool bilingualEnabled = false,
     String? secondaryLanguage,
     BilingualBlend? bilingualBlend,
+    DetailLevel? detailLevel,
     String? branchedFromBeatId,
   }) async {
     final series = Series(
@@ -59,6 +60,7 @@ class SeriesService {
       bilingualEnabled: bilingualEnabled,
       secondaryLanguage: secondaryLanguage,
       bilingualBlend: bilingualBlend,
+      detailLevel: detailLevel,
       branchedFromBeatId: branchedFromBeatId,
     );
     await _repo.saveSeries(series);
@@ -116,6 +118,7 @@ class SeriesService {
       bilingualEnabled: bilingualEnabled,
       secondaryLanguage: bilingualEnabled ? secondaryLanguage : null,
       bilingualBlend: bilingualEnabled ? bilingualBlend : null,
+      detailLevel: series.detailLevel,
       seedSummary: series.seedSummary,
       storyBible: series.storyBible,
       branchedFromBeatId: series.branchedFromBeatId,
@@ -149,6 +152,7 @@ class SeriesService {
       bilingualEnabled: from.bilingualEnabled,
       secondaryLanguage: from.secondaryLanguage,
       bilingualBlend: from.bilingualBlend,
+      detailLevel: from.detailLevel,
       branchedFromBeatId: fromBeatId,
     );
   }

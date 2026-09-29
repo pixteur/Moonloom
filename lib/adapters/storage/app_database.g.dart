@@ -1844,6 +1844,18 @@ class $WorldsTable extends Worlds with TableInfo<$WorldsTable, WorldRow> {
     requiredDuringInsert: false,
     defaultValue: const Constant(''),
   );
+  static const VerificationMeta _styleGuideMeta = const VerificationMeta(
+    'styleGuide',
+  );
+  @override
+  late final GeneratedColumn<String> styleGuide = GeneratedColumn<String>(
+    'style_guide',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
   static const VerificationMeta _castChangesMeta = const VerificationMeta(
     'castChanges',
   );
@@ -1877,6 +1889,7 @@ class $WorldsTable extends Worlds with TableInfo<$WorldsTable, WorldRow> {
     theme,
     extraThemes,
     voiceName,
+    styleGuide,
     castChanges,
     createdAt,
   ];
@@ -1934,6 +1947,12 @@ class $WorldsTable extends Worlds with TableInfo<$WorldsTable, WorldRow> {
         voiceName.isAcceptableOrUnknown(data['voice_name']!, _voiceNameMeta),
       );
     }
+    if (data.containsKey('style_guide')) {
+      context.handle(
+        _styleGuideMeta,
+        styleGuide.isAcceptableOrUnknown(data['style_guide']!, _styleGuideMeta),
+      );
+    }
     if (data.containsKey('cast_changes')) {
       context.handle(
         _castChangesMeta,
@@ -1988,6 +2007,10 @@ class $WorldsTable extends Worlds with TableInfo<$WorldsTable, WorldRow> {
         DriftSqlType.string,
         data['${effectivePrefix}voice_name'],
       )!,
+      styleGuide: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}style_guide'],
+      )!,
       castChanges: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}cast_changes'],
@@ -2022,6 +2045,12 @@ class WorldRow extends DataClass implements Insertable<WorldRow> {
   /// setting. Only the voice name, never the engine — see World.voiceName.
   final String voiceName;
 
+  /// The look every picture in this world shares — palette, medium, light,
+  /// line quality. Written once from the world's own premise, then repeated
+  /// verbatim in every image prompt, which is what stops each episode being
+  /// illustrated by a different artist.
+  final String styleGuide;
+
   /// Cast edits (arrivals/departures) the next story must acknowledge, as JSON.
   final String castChanges;
   final DateTime createdAt;
@@ -2033,6 +2062,7 @@ class WorldRow extends DataClass implements Insertable<WorldRow> {
     required this.theme,
     required this.extraThemes,
     required this.voiceName,
+    required this.styleGuide,
     required this.castChanges,
     required this.createdAt,
   });
@@ -2048,6 +2078,7 @@ class WorldRow extends DataClass implements Insertable<WorldRow> {
     }
     map['extra_themes'] = Variable<String>(extraThemes);
     map['voice_name'] = Variable<String>(voiceName);
+    map['style_guide'] = Variable<String>(styleGuide);
     map['cast_changes'] = Variable<String>(castChanges);
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
@@ -2062,6 +2093,7 @@ class WorldRow extends DataClass implements Insertable<WorldRow> {
       theme: Value(theme),
       extraThemes: Value(extraThemes),
       voiceName: Value(voiceName),
+      styleGuide: Value(styleGuide),
       castChanges: Value(castChanges),
       createdAt: Value(createdAt),
     );
@@ -2082,6 +2114,7 @@ class WorldRow extends DataClass implements Insertable<WorldRow> {
       ),
       extraThemes: serializer.fromJson<String>(json['extraThemes']),
       voiceName: serializer.fromJson<String>(json['voiceName']),
+      styleGuide: serializer.fromJson<String>(json['styleGuide']),
       castChanges: serializer.fromJson<String>(json['castChanges']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
@@ -2099,6 +2132,7 @@ class WorldRow extends DataClass implements Insertable<WorldRow> {
       ),
       'extraThemes': serializer.toJson<String>(extraThemes),
       'voiceName': serializer.toJson<String>(voiceName),
+      'styleGuide': serializer.toJson<String>(styleGuide),
       'castChanges': serializer.toJson<String>(castChanges),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
@@ -2112,6 +2146,7 @@ class WorldRow extends DataClass implements Insertable<WorldRow> {
     StoryTheme? theme,
     String? extraThemes,
     String? voiceName,
+    String? styleGuide,
     String? castChanges,
     DateTime? createdAt,
   }) => WorldRow(
@@ -2122,6 +2157,7 @@ class WorldRow extends DataClass implements Insertable<WorldRow> {
     theme: theme ?? this.theme,
     extraThemes: extraThemes ?? this.extraThemes,
     voiceName: voiceName ?? this.voiceName,
+    styleGuide: styleGuide ?? this.styleGuide,
     castChanges: castChanges ?? this.castChanges,
     createdAt: createdAt ?? this.createdAt,
   );
@@ -2136,6 +2172,9 @@ class WorldRow extends DataClass implements Insertable<WorldRow> {
           ? data.extraThemes.value
           : this.extraThemes,
       voiceName: data.voiceName.present ? data.voiceName.value : this.voiceName,
+      styleGuide: data.styleGuide.present
+          ? data.styleGuide.value
+          : this.styleGuide,
       castChanges: data.castChanges.present
           ? data.castChanges.value
           : this.castChanges,
@@ -2153,6 +2192,7 @@ class WorldRow extends DataClass implements Insertable<WorldRow> {
           ..write('theme: $theme, ')
           ..write('extraThemes: $extraThemes, ')
           ..write('voiceName: $voiceName, ')
+          ..write('styleGuide: $styleGuide, ')
           ..write('castChanges: $castChanges, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
@@ -2168,6 +2208,7 @@ class WorldRow extends DataClass implements Insertable<WorldRow> {
     theme,
     extraThemes,
     voiceName,
+    styleGuide,
     castChanges,
     createdAt,
   );
@@ -2182,6 +2223,7 @@ class WorldRow extends DataClass implements Insertable<WorldRow> {
           other.theme == this.theme &&
           other.extraThemes == this.extraThemes &&
           other.voiceName == this.voiceName &&
+          other.styleGuide == this.styleGuide &&
           other.castChanges == this.castChanges &&
           other.createdAt == this.createdAt);
 }
@@ -2194,6 +2236,7 @@ class WorldsCompanion extends UpdateCompanion<WorldRow> {
   final Value<StoryTheme> theme;
   final Value<String> extraThemes;
   final Value<String> voiceName;
+  final Value<String> styleGuide;
   final Value<String> castChanges;
   final Value<DateTime> createdAt;
   final Value<int> rowid;
@@ -2205,6 +2248,7 @@ class WorldsCompanion extends UpdateCompanion<WorldRow> {
     this.theme = const Value.absent(),
     this.extraThemes = const Value.absent(),
     this.voiceName = const Value.absent(),
+    this.styleGuide = const Value.absent(),
     this.castChanges = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -2217,6 +2261,7 @@ class WorldsCompanion extends UpdateCompanion<WorldRow> {
     required StoryTheme theme,
     this.extraThemes = const Value.absent(),
     this.voiceName = const Value.absent(),
+    this.styleGuide = const Value.absent(),
     this.castChanges = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -2232,6 +2277,7 @@ class WorldsCompanion extends UpdateCompanion<WorldRow> {
     Expression<int>? theme,
     Expression<String>? extraThemes,
     Expression<String>? voiceName,
+    Expression<String>? styleGuide,
     Expression<String>? castChanges,
     Expression<DateTime>? createdAt,
     Expression<int>? rowid,
@@ -2244,6 +2290,7 @@ class WorldsCompanion extends UpdateCompanion<WorldRow> {
       if (theme != null) 'theme': theme,
       if (extraThemes != null) 'extra_themes': extraThemes,
       if (voiceName != null) 'voice_name': voiceName,
+      if (styleGuide != null) 'style_guide': styleGuide,
       if (castChanges != null) 'cast_changes': castChanges,
       if (createdAt != null) 'created_at': createdAt,
       if (rowid != null) 'rowid': rowid,
@@ -2258,6 +2305,7 @@ class WorldsCompanion extends UpdateCompanion<WorldRow> {
     Value<StoryTheme>? theme,
     Value<String>? extraThemes,
     Value<String>? voiceName,
+    Value<String>? styleGuide,
     Value<String>? castChanges,
     Value<DateTime>? createdAt,
     Value<int>? rowid,
@@ -2270,6 +2318,7 @@ class WorldsCompanion extends UpdateCompanion<WorldRow> {
       theme: theme ?? this.theme,
       extraThemes: extraThemes ?? this.extraThemes,
       voiceName: voiceName ?? this.voiceName,
+      styleGuide: styleGuide ?? this.styleGuide,
       castChanges: castChanges ?? this.castChanges,
       createdAt: createdAt ?? this.createdAt,
       rowid: rowid ?? this.rowid,
@@ -2302,6 +2351,9 @@ class WorldsCompanion extends UpdateCompanion<WorldRow> {
     if (voiceName.present) {
       map['voice_name'] = Variable<String>(voiceName.value);
     }
+    if (styleGuide.present) {
+      map['style_guide'] = Variable<String>(styleGuide.value);
+    }
     if (castChanges.present) {
       map['cast_changes'] = Variable<String>(castChanges.value);
     }
@@ -2324,6 +2376,7 @@ class WorldsCompanion extends UpdateCompanion<WorldRow> {
           ..write('theme: $theme, ')
           ..write('extraThemes: $extraThemes, ')
           ..write('voiceName: $voiceName, ')
+          ..write('styleGuide: $styleGuide, ')
           ..write('castChanges: $castChanges, ')
           ..write('createdAt: $createdAt, ')
           ..write('rowid: $rowid')
@@ -2382,6 +2435,18 @@ class $StoryCharactersTable extends StoryCharacters
     requiredDuringInsert: false,
     defaultValue: const Constant(''),
   );
+  static const VerificationMeta _sheetFileKeyMeta = const VerificationMeta(
+    'sheetFileKey',
+  );
+  @override
+  late final GeneratedColumn<String> sheetFileKey = GeneratedColumn<String>(
+    'sheet_file_key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -2400,6 +2465,7 @@ class $StoryCharactersTable extends StoryCharacters
     worldId,
     name,
     description,
+    sheetFileKey,
     createdAt,
   ];
   @override
@@ -2444,6 +2510,15 @@ class $StoryCharactersTable extends StoryCharacters
         ),
       );
     }
+    if (data.containsKey('sheet_file_key')) {
+      context.handle(
+        _sheetFileKeyMeta,
+        sheetFileKey.isAcceptableOrUnknown(
+          data['sheet_file_key']!,
+          _sheetFileKeyMeta,
+        ),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -2475,6 +2550,10 @@ class $StoryCharactersTable extends StoryCharacters
         DriftSqlType.string,
         data['${effectivePrefix}description'],
       )!,
+      sheetFileKey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sheet_file_key'],
+      )!,
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -2493,12 +2572,18 @@ class CharacterRow extends DataClass implements Insertable<CharacterRow> {
   final String worldId;
   final String name;
   final String description;
+
+  /// A reference drawing of this character, handed back to the image model
+  /// every time they appear. Text cannot pin a face down — "a small white
+  /// fox" describes a thousand foxes — so the picture is the specification.
+  final String sheetFileKey;
   final DateTime createdAt;
   const CharacterRow({
     required this.id,
     required this.worldId,
     required this.name,
     required this.description,
+    required this.sheetFileKey,
     required this.createdAt,
   });
   @override
@@ -2508,6 +2593,7 @@ class CharacterRow extends DataClass implements Insertable<CharacterRow> {
     map['world_id'] = Variable<String>(worldId);
     map['name'] = Variable<String>(name);
     map['description'] = Variable<String>(description);
+    map['sheet_file_key'] = Variable<String>(sheetFileKey);
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
   }
@@ -2518,6 +2604,7 @@ class CharacterRow extends DataClass implements Insertable<CharacterRow> {
       worldId: Value(worldId),
       name: Value(name),
       description: Value(description),
+      sheetFileKey: Value(sheetFileKey),
       createdAt: Value(createdAt),
     );
   }
@@ -2532,6 +2619,7 @@ class CharacterRow extends DataClass implements Insertable<CharacterRow> {
       worldId: serializer.fromJson<String>(json['worldId']),
       name: serializer.fromJson<String>(json['name']),
       description: serializer.fromJson<String>(json['description']),
+      sheetFileKey: serializer.fromJson<String>(json['sheetFileKey']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
@@ -2543,6 +2631,7 @@ class CharacterRow extends DataClass implements Insertable<CharacterRow> {
       'worldId': serializer.toJson<String>(worldId),
       'name': serializer.toJson<String>(name),
       'description': serializer.toJson<String>(description),
+      'sheetFileKey': serializer.toJson<String>(sheetFileKey),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
@@ -2552,12 +2641,14 @@ class CharacterRow extends DataClass implements Insertable<CharacterRow> {
     String? worldId,
     String? name,
     String? description,
+    String? sheetFileKey,
     DateTime? createdAt,
   }) => CharacterRow(
     id: id ?? this.id,
     worldId: worldId ?? this.worldId,
     name: name ?? this.name,
     description: description ?? this.description,
+    sheetFileKey: sheetFileKey ?? this.sheetFileKey,
     createdAt: createdAt ?? this.createdAt,
   );
   CharacterRow copyWithCompanion(StoryCharactersCompanion data) {
@@ -2568,6 +2659,9 @@ class CharacterRow extends DataClass implements Insertable<CharacterRow> {
       description: data.description.present
           ? data.description.value
           : this.description,
+      sheetFileKey: data.sheetFileKey.present
+          ? data.sheetFileKey.value
+          : this.sheetFileKey,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -2579,13 +2673,15 @@ class CharacterRow extends DataClass implements Insertable<CharacterRow> {
           ..write('worldId: $worldId, ')
           ..write('name: $name, ')
           ..write('description: $description, ')
+          ..write('sheetFileKey: $sheetFileKey, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, worldId, name, description, createdAt);
+  int get hashCode =>
+      Object.hash(id, worldId, name, description, sheetFileKey, createdAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2594,6 +2690,7 @@ class CharacterRow extends DataClass implements Insertable<CharacterRow> {
           other.worldId == this.worldId &&
           other.name == this.name &&
           other.description == this.description &&
+          other.sheetFileKey == this.sheetFileKey &&
           other.createdAt == this.createdAt);
 }
 
@@ -2602,6 +2699,7 @@ class StoryCharactersCompanion extends UpdateCompanion<CharacterRow> {
   final Value<String> worldId;
   final Value<String> name;
   final Value<String> description;
+  final Value<String> sheetFileKey;
   final Value<DateTime> createdAt;
   final Value<int> rowid;
   const StoryCharactersCompanion({
@@ -2609,6 +2707,7 @@ class StoryCharactersCompanion extends UpdateCompanion<CharacterRow> {
     this.worldId = const Value.absent(),
     this.name = const Value.absent(),
     this.description = const Value.absent(),
+    this.sheetFileKey = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -2617,6 +2716,7 @@ class StoryCharactersCompanion extends UpdateCompanion<CharacterRow> {
     required String worldId,
     required String name,
     this.description = const Value.absent(),
+    this.sheetFileKey = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
@@ -2627,6 +2727,7 @@ class StoryCharactersCompanion extends UpdateCompanion<CharacterRow> {
     Expression<String>? worldId,
     Expression<String>? name,
     Expression<String>? description,
+    Expression<String>? sheetFileKey,
     Expression<DateTime>? createdAt,
     Expression<int>? rowid,
   }) {
@@ -2635,6 +2736,7 @@ class StoryCharactersCompanion extends UpdateCompanion<CharacterRow> {
       if (worldId != null) 'world_id': worldId,
       if (name != null) 'name': name,
       if (description != null) 'description': description,
+      if (sheetFileKey != null) 'sheet_file_key': sheetFileKey,
       if (createdAt != null) 'created_at': createdAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -2645,6 +2747,7 @@ class StoryCharactersCompanion extends UpdateCompanion<CharacterRow> {
     Value<String>? worldId,
     Value<String>? name,
     Value<String>? description,
+    Value<String>? sheetFileKey,
     Value<DateTime>? createdAt,
     Value<int>? rowid,
   }) {
@@ -2653,6 +2756,7 @@ class StoryCharactersCompanion extends UpdateCompanion<CharacterRow> {
       worldId: worldId ?? this.worldId,
       name: name ?? this.name,
       description: description ?? this.description,
+      sheetFileKey: sheetFileKey ?? this.sheetFileKey,
       createdAt: createdAt ?? this.createdAt,
       rowid: rowid ?? this.rowid,
     );
@@ -2673,6 +2777,9 @@ class StoryCharactersCompanion extends UpdateCompanion<CharacterRow> {
     if (description.present) {
       map['description'] = Variable<String>(description.value);
     }
+    if (sheetFileKey.present) {
+      map['sheet_file_key'] = Variable<String>(sheetFileKey.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -2689,6 +2796,7 @@ class StoryCharactersCompanion extends UpdateCompanion<CharacterRow> {
           ..write('worldId: $worldId, ')
           ..write('name: $name, ')
           ..write('description: $description, ')
+          ..write('sheetFileKey: $sheetFileKey, ')
           ..write('createdAt: $createdAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -2906,6 +3014,15 @@ class $SeriesTableTable extends SeriesTable
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  @override
+  late final GeneratedColumnWithTypeConverter<DetailLevel?, int> detailLevel =
+      GeneratedColumn<int>(
+        'detail_level',
+        aliasedName,
+        true,
+        type: DriftSqlType.int,
+        requiredDuringInsert: false,
+      ).withConverter<DetailLevel?>($SeriesTableTable.$converterdetailLeveln);
   static const VerificationMeta _lastReadSeqMeta = const VerificationMeta(
     'lastReadSeq',
   );
@@ -2972,6 +3089,7 @@ class $SeriesTableTable extends SeriesTable
     branchedFromBeatId,
     status,
     baseLanguage,
+    detailLevel,
     lastReadSeq,
     lastReadAt,
     createdAt,
@@ -3216,6 +3334,12 @@ class $SeriesTableTable extends SeriesTable
         DriftSqlType.string,
         data['${effectivePrefix}base_language'],
       ),
+      detailLevel: $SeriesTableTable.$converterdetailLeveln.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.int,
+          data['${effectivePrefix}detail_level'],
+        ),
+      ),
       lastReadSeq: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}last_read_seq'],
@@ -3252,6 +3376,10 @@ class $SeriesTableTable extends SeriesTable
   );
   static JsonTypeConverter2<SeriesStatus, int, int> $converterstatus =
       const EnumIndexConverter<SeriesStatus>(SeriesStatus.values);
+  static JsonTypeConverter2<DetailLevel, int, int> $converterdetailLevel =
+      const EnumIndexConverter<DetailLevel>(DetailLevel.values);
+  static JsonTypeConverter2<DetailLevel?, int?, int?> $converterdetailLeveln =
+      JsonTypeConverter2.asNullable($converterdetailLevel);
 }
 
 class SeriesRow extends DataClass implements Insertable<SeriesRow> {
@@ -3282,6 +3410,12 @@ class SeriesRow extends DataClass implements Insertable<SeriesRow> {
   /// before a bilingual household needed two.
   final String? baseLanguage;
 
+  /// The length this story was asked for, so the bookshelf can group by it.
+  /// Nullable: stories written before this existed never recorded a shape,
+  /// and guessing one from the chapter count would mislabel every story still
+  /// being written.
+  final DetailLevel? detailLevel;
+
   /// Reading position: the chapter last opened and when, so the bookshelf can
   /// offer "Continue — Chapter 4".
   final int? lastReadSeq;
@@ -3307,6 +3441,7 @@ class SeriesRow extends DataClass implements Insertable<SeriesRow> {
     this.branchedFromBeatId,
     required this.status,
     this.baseLanguage,
+    this.detailLevel,
     this.lastReadSeq,
     this.lastReadAt,
     required this.createdAt,
@@ -3361,6 +3496,11 @@ class SeriesRow extends DataClass implements Insertable<SeriesRow> {
     if (!nullToAbsent || baseLanguage != null) {
       map['base_language'] = Variable<String>(baseLanguage);
     }
+    if (!nullToAbsent || detailLevel != null) {
+      map['detail_level'] = Variable<int>(
+        $SeriesTableTable.$converterdetailLeveln.toSql(detailLevel),
+      );
+    }
     if (!nullToAbsent || lastReadSeq != null) {
       map['last_read_seq'] = Variable<int>(lastReadSeq);
     }
@@ -3406,6 +3546,9 @@ class SeriesRow extends DataClass implements Insertable<SeriesRow> {
       baseLanguage: baseLanguage == null && nullToAbsent
           ? const Value.absent()
           : Value(baseLanguage),
+      detailLevel: detailLevel == null && nullToAbsent
+          ? const Value.absent()
+          : Value(detailLevel),
       lastReadSeq: lastReadSeq == null && nullToAbsent
           ? const Value.absent()
           : Value(lastReadSeq),
@@ -3453,6 +3596,9 @@ class SeriesRow extends DataClass implements Insertable<SeriesRow> {
         serializer.fromJson<int>(json['status']),
       ),
       baseLanguage: serializer.fromJson<String?>(json['baseLanguage']),
+      detailLevel: $SeriesTableTable.$converterdetailLeveln.fromJson(
+        serializer.fromJson<int?>(json['detailLevel']),
+      ),
       lastReadSeq: serializer.fromJson<int?>(json['lastReadSeq']),
       lastReadAt: serializer.fromJson<DateTime?>(json['lastReadAt']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
@@ -3489,6 +3635,9 @@ class SeriesRow extends DataClass implements Insertable<SeriesRow> {
         $SeriesTableTable.$converterstatus.toJson(status),
       ),
       'baseLanguage': serializer.toJson<String?>(baseLanguage),
+      'detailLevel': serializer.toJson<int?>(
+        $SeriesTableTable.$converterdetailLeveln.toJson(detailLevel),
+      ),
       'lastReadSeq': serializer.toJson<int?>(lastReadSeq),
       'lastReadAt': serializer.toJson<DateTime?>(lastReadAt),
       'createdAt': serializer.toJson<DateTime>(createdAt),
@@ -3515,6 +3664,7 @@ class SeriesRow extends DataClass implements Insertable<SeriesRow> {
     Value<String?> branchedFromBeatId = const Value.absent(),
     SeriesStatus? status,
     Value<String?> baseLanguage = const Value.absent(),
+    Value<DetailLevel?> detailLevel = const Value.absent(),
     Value<int?> lastReadSeq = const Value.absent(),
     Value<DateTime?> lastReadAt = const Value.absent(),
     DateTime? createdAt,
@@ -3544,6 +3694,7 @@ class SeriesRow extends DataClass implements Insertable<SeriesRow> {
         : this.branchedFromBeatId,
     status: status ?? this.status,
     baseLanguage: baseLanguage.present ? baseLanguage.value : this.baseLanguage,
+    detailLevel: detailLevel.present ? detailLevel.value : this.detailLevel,
     lastReadSeq: lastReadSeq.present ? lastReadSeq.value : this.lastReadSeq,
     lastReadAt: lastReadAt.present ? lastReadAt.value : this.lastReadAt,
     createdAt: createdAt ?? this.createdAt,
@@ -3587,6 +3738,9 @@ class SeriesRow extends DataClass implements Insertable<SeriesRow> {
       baseLanguage: data.baseLanguage.present
           ? data.baseLanguage.value
           : this.baseLanguage,
+      detailLevel: data.detailLevel.present
+          ? data.detailLevel.value
+          : this.detailLevel,
       lastReadSeq: data.lastReadSeq.present
           ? data.lastReadSeq.value
           : this.lastReadSeq,
@@ -3619,6 +3773,7 @@ class SeriesRow extends DataClass implements Insertable<SeriesRow> {
           ..write('branchedFromBeatId: $branchedFromBeatId, ')
           ..write('status: $status, ')
           ..write('baseLanguage: $baseLanguage, ')
+          ..write('detailLevel: $detailLevel, ')
           ..write('lastReadSeq: $lastReadSeq, ')
           ..write('lastReadAt: $lastReadAt, ')
           ..write('createdAt: $createdAt, ')
@@ -3647,6 +3802,7 @@ class SeriesRow extends DataClass implements Insertable<SeriesRow> {
     branchedFromBeatId,
     status,
     baseLanguage,
+    detailLevel,
     lastReadSeq,
     lastReadAt,
     createdAt,
@@ -3674,6 +3830,7 @@ class SeriesRow extends DataClass implements Insertable<SeriesRow> {
           other.branchedFromBeatId == this.branchedFromBeatId &&
           other.status == this.status &&
           other.baseLanguage == this.baseLanguage &&
+          other.detailLevel == this.detailLevel &&
           other.lastReadSeq == this.lastReadSeq &&
           other.lastReadAt == this.lastReadAt &&
           other.createdAt == this.createdAt &&
@@ -3699,6 +3856,7 @@ class SeriesTableCompanion extends UpdateCompanion<SeriesRow> {
   final Value<String?> branchedFromBeatId;
   final Value<SeriesStatus> status;
   final Value<String?> baseLanguage;
+  final Value<DetailLevel?> detailLevel;
   final Value<int?> lastReadSeq;
   final Value<DateTime?> lastReadAt;
   final Value<DateTime> createdAt;
@@ -3723,6 +3881,7 @@ class SeriesTableCompanion extends UpdateCompanion<SeriesRow> {
     this.branchedFromBeatId = const Value.absent(),
     this.status = const Value.absent(),
     this.baseLanguage = const Value.absent(),
+    this.detailLevel = const Value.absent(),
     this.lastReadSeq = const Value.absent(),
     this.lastReadAt = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -3748,6 +3907,7 @@ class SeriesTableCompanion extends UpdateCompanion<SeriesRow> {
     this.branchedFromBeatId = const Value.absent(),
     required SeriesStatus status,
     this.baseLanguage = const Value.absent(),
+    this.detailLevel = const Value.absent(),
     this.lastReadSeq = const Value.absent(),
     this.lastReadAt = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -3778,6 +3938,7 @@ class SeriesTableCompanion extends UpdateCompanion<SeriesRow> {
     Expression<String>? branchedFromBeatId,
     Expression<int>? status,
     Expression<String>? baseLanguage,
+    Expression<int>? detailLevel,
     Expression<int>? lastReadSeq,
     Expression<DateTime>? lastReadAt,
     Expression<DateTime>? createdAt,
@@ -3804,6 +3965,7 @@ class SeriesTableCompanion extends UpdateCompanion<SeriesRow> {
         'branched_from_beat_id': branchedFromBeatId,
       if (status != null) 'status': status,
       if (baseLanguage != null) 'base_language': baseLanguage,
+      if (detailLevel != null) 'detail_level': detailLevel,
       if (lastReadSeq != null) 'last_read_seq': lastReadSeq,
       if (lastReadAt != null) 'last_read_at': lastReadAt,
       if (createdAt != null) 'created_at': createdAt,
@@ -3831,6 +3993,7 @@ class SeriesTableCompanion extends UpdateCompanion<SeriesRow> {
     Value<String?>? branchedFromBeatId,
     Value<SeriesStatus>? status,
     Value<String?>? baseLanguage,
+    Value<DetailLevel?>? detailLevel,
     Value<int?>? lastReadSeq,
     Value<DateTime?>? lastReadAt,
     Value<DateTime>? createdAt,
@@ -3856,6 +4019,7 @@ class SeriesTableCompanion extends UpdateCompanion<SeriesRow> {
       branchedFromBeatId: branchedFromBeatId ?? this.branchedFromBeatId,
       status: status ?? this.status,
       baseLanguage: baseLanguage ?? this.baseLanguage,
+      detailLevel: detailLevel ?? this.detailLevel,
       lastReadSeq: lastReadSeq ?? this.lastReadSeq,
       lastReadAt: lastReadAt ?? this.lastReadAt,
       createdAt: createdAt ?? this.createdAt,
@@ -3929,6 +4093,11 @@ class SeriesTableCompanion extends UpdateCompanion<SeriesRow> {
     if (baseLanguage.present) {
       map['base_language'] = Variable<String>(baseLanguage.value);
     }
+    if (detailLevel.present) {
+      map['detail_level'] = Variable<int>(
+        $SeriesTableTable.$converterdetailLeveln.toSql(detailLevel.value),
+      );
+    }
     if (lastReadSeq.present) {
       map['last_read_seq'] = Variable<int>(lastReadSeq.value);
     }
@@ -3968,6 +4137,7 @@ class SeriesTableCompanion extends UpdateCompanion<SeriesRow> {
           ..write('branchedFromBeatId: $branchedFromBeatId, ')
           ..write('status: $status, ')
           ..write('baseLanguage: $baseLanguage, ')
+          ..write('detailLevel: $detailLevel, ')
           ..write('lastReadSeq: $lastReadSeq, ')
           ..write('lastReadAt: $lastReadAt, ')
           ..write('createdAt: $createdAt, ')
@@ -7482,6 +7652,7 @@ typedef $$WorldsTableCreateCompanionBuilder =
       required StoryTheme theme,
       Value<String> extraThemes,
       Value<String> voiceName,
+      Value<String> styleGuide,
       Value<String> castChanges,
       Value<DateTime> createdAt,
       Value<int> rowid,
@@ -7495,6 +7666,7 @@ typedef $$WorldsTableUpdateCompanionBuilder =
       Value<StoryTheme> theme,
       Value<String> extraThemes,
       Value<String> voiceName,
+      Value<String> styleGuide,
       Value<String> castChanges,
       Value<DateTime> createdAt,
       Value<int> rowid,
@@ -7597,6 +7769,11 @@ class $$WorldsTableFilterComposer
 
   ColumnFilters<String> get voiceName => $composableBuilder(
     column: $table.voiceName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get styleGuide => $composableBuilder(
+    column: $table.styleGuide,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -7723,6 +7900,11 @@ class $$WorldsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get styleGuide => $composableBuilder(
+    column: $table.styleGuide,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get castChanges => $composableBuilder(
     column: $table.castChanges,
     builder: (column) => ColumnOrderings(column),
@@ -7785,6 +7967,11 @@ class $$WorldsTableAnnotationComposer
 
   GeneratedColumn<String> get voiceName =>
       $composableBuilder(column: $table.voiceName, builder: (column) => column);
+
+  GeneratedColumn<String> get styleGuide => $composableBuilder(
+    column: $table.styleGuide,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get castChanges => $composableBuilder(
     column: $table.castChanges,
@@ -7907,6 +8094,7 @@ class $$WorldsTableTableManager
                 Value<StoryTheme> theme = const Value.absent(),
                 Value<String> extraThemes = const Value.absent(),
                 Value<String> voiceName = const Value.absent(),
+                Value<String> styleGuide = const Value.absent(),
                 Value<String> castChanges = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -7918,6 +8106,7 @@ class $$WorldsTableTableManager
                 theme: theme,
                 extraThemes: extraThemes,
                 voiceName: voiceName,
+                styleGuide: styleGuide,
                 castChanges: castChanges,
                 createdAt: createdAt,
                 rowid: rowid,
@@ -7931,6 +8120,7 @@ class $$WorldsTableTableManager
                 required StoryTheme theme,
                 Value<String> extraThemes = const Value.absent(),
                 Value<String> voiceName = const Value.absent(),
+                Value<String> styleGuide = const Value.absent(),
                 Value<String> castChanges = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -7942,6 +8132,7 @@ class $$WorldsTableTableManager
                 theme: theme,
                 extraThemes: extraThemes,
                 voiceName: voiceName,
+                styleGuide: styleGuide,
                 castChanges: castChanges,
                 createdAt: createdAt,
                 rowid: rowid,
@@ -8072,6 +8263,7 @@ typedef $$StoryCharactersTableCreateCompanionBuilder =
       required String worldId,
       required String name,
       Value<String> description,
+      Value<String> sheetFileKey,
       Value<DateTime> createdAt,
       Value<int> rowid,
     });
@@ -8081,6 +8273,7 @@ typedef $$StoryCharactersTableUpdateCompanionBuilder =
       Value<String> worldId,
       Value<String> name,
       Value<String> description,
+      Value<String> sheetFileKey,
       Value<DateTime> createdAt,
       Value<int> rowid,
     });
@@ -8132,6 +8325,11 @@ class $$StoryCharactersTableFilterComposer
 
   ColumnFilters<String> get description => $composableBuilder(
     column: $table.description,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sheetFileKey => $composableBuilder(
+    column: $table.sheetFileKey,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -8188,6 +8386,11 @@ class $$StoryCharactersTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get sheetFileKey => $composableBuilder(
+    column: $table.sheetFileKey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -8234,6 +8437,11 @@ class $$StoryCharactersTableAnnotationComposer
 
   GeneratedColumn<String> get description => $composableBuilder(
     column: $table.description,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get sheetFileKey => $composableBuilder(
+    column: $table.sheetFileKey,
     builder: (column) => column,
   );
 
@@ -8298,6 +8506,7 @@ class $$StoryCharactersTableTableManager
                 Value<String> worldId = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<String> description = const Value.absent(),
+                Value<String> sheetFileKey = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => StoryCharactersCompanion(
@@ -8305,6 +8514,7 @@ class $$StoryCharactersTableTableManager
                 worldId: worldId,
                 name: name,
                 description: description,
+                sheetFileKey: sheetFileKey,
                 createdAt: createdAt,
                 rowid: rowid,
               ),
@@ -8314,6 +8524,7 @@ class $$StoryCharactersTableTableManager
                 required String worldId,
                 required String name,
                 Value<String> description = const Value.absent(),
+                Value<String> sheetFileKey = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => StoryCharactersCompanion.insert(
@@ -8321,6 +8532,7 @@ class $$StoryCharactersTableTableManager
                 worldId: worldId,
                 name: name,
                 description: description,
+                sheetFileKey: sheetFileKey,
                 createdAt: createdAt,
                 rowid: rowid,
               ),
@@ -8413,6 +8625,7 @@ typedef $$SeriesTableTableCreateCompanionBuilder =
       Value<String?> branchedFromBeatId,
       required SeriesStatus status,
       Value<String?> baseLanguage,
+      Value<DetailLevel?> detailLevel,
       Value<int?> lastReadSeq,
       Value<DateTime?> lastReadAt,
       Value<DateTime> createdAt,
@@ -8439,6 +8652,7 @@ typedef $$SeriesTableTableUpdateCompanionBuilder =
       Value<String?> branchedFromBeatId,
       Value<SeriesStatus> status,
       Value<String?> baseLanguage,
+      Value<DetailLevel?> detailLevel,
       Value<int?> lastReadSeq,
       Value<DateTime?> lastReadAt,
       Value<DateTime> createdAt,
@@ -8613,6 +8827,12 @@ class $$SeriesTableTableFilterComposer
   ColumnFilters<String> get baseLanguage => $composableBuilder(
     column: $table.baseLanguage,
     builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<DetailLevel?, DetailLevel, int>
+  get detailLevel => $composableBuilder(
+    column: $table.detailLevel,
+    builder: (column) => ColumnWithTypeConverterFilters(column),
   );
 
   ColumnFilters<int> get lastReadSeq => $composableBuilder(
@@ -8821,6 +9041,11 @@ class $$SeriesTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get detailLevel => $composableBuilder(
+    column: $table.detailLevel,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get lastReadSeq => $composableBuilder(
     column: $table.lastReadSeq,
     builder: (column) => ColumnOrderings(column),
@@ -8963,6 +9188,12 @@ class $$SeriesTableTableAnnotationComposer
     column: $table.baseLanguage,
     builder: (column) => column,
   );
+
+  GeneratedColumnWithTypeConverter<DetailLevel?, int> get detailLevel =>
+      $composableBuilder(
+        column: $table.detailLevel,
+        builder: (column) => column,
+      );
 
   GeneratedColumn<int> get lastReadSeq => $composableBuilder(
     column: $table.lastReadSeq,
@@ -9128,6 +9359,7 @@ class $$SeriesTableTableTableManager
                 Value<String?> branchedFromBeatId = const Value.absent(),
                 Value<SeriesStatus> status = const Value.absent(),
                 Value<String?> baseLanguage = const Value.absent(),
+                Value<DetailLevel?> detailLevel = const Value.absent(),
                 Value<int?> lastReadSeq = const Value.absent(),
                 Value<DateTime?> lastReadAt = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
@@ -9152,6 +9384,7 @@ class $$SeriesTableTableTableManager
                 branchedFromBeatId: branchedFromBeatId,
                 status: status,
                 baseLanguage: baseLanguage,
+                detailLevel: detailLevel,
                 lastReadSeq: lastReadSeq,
                 lastReadAt: lastReadAt,
                 createdAt: createdAt,
@@ -9178,6 +9411,7 @@ class $$SeriesTableTableTableManager
                 Value<String?> branchedFromBeatId = const Value.absent(),
                 required SeriesStatus status,
                 Value<String?> baseLanguage = const Value.absent(),
+                Value<DetailLevel?> detailLevel = const Value.absent(),
                 Value<int?> lastReadSeq = const Value.absent(),
                 Value<DateTime?> lastReadAt = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
@@ -9202,6 +9436,7 @@ class $$SeriesTableTableTableManager
                 branchedFromBeatId: branchedFromBeatId,
                 status: status,
                 baseLanguage: baseLanguage,
+                detailLevel: detailLevel,
                 lastReadSeq: lastReadSeq,
                 lastReadAt: lastReadAt,
                 createdAt: createdAt,

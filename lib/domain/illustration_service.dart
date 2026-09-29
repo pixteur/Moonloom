@@ -1,14 +1,32 @@
-/// Giving a story its pictures.
+/// Giving a story its pictures, and making them look like one book.
 ///
-/// Draws, stores the bytes, and records what was asked for. Deliberately not
-/// part of `StoryEngine`: a picture costs more than the whole story it
-/// illustrates — 4,4 centimes against 2,6 for a mini episode — so it is never
-/// something a turn does on its own. It happens when somebody asks.
+/// The first version drew each picture from words alone, and Mia's stories
+/// came back with a different fox in every one. That is not a prompt that
+/// needs improving: "a small white fox" describes a thousand foxes, and the
+/// model picks a new one each time it is asked. Two things fix it, and both
+/// are about deciding something **once** and then repeating it exactly.
 ///
-/// See `docs/story-images.md`.
+///   * **A character sheet.** Each character is drawn once — three views,
+///     plain background, even light — and that drawing is handed back to the
+///     model as a reference every time they appear. The picture is the
+///     specification; the description is only the brief for it.
+///   * **A world style guide.** One paragraph of art direction, written from
+///     the world's own premise by the model that writes the stories, then
+///     repeated verbatim in every prompt. It keeps twenty episodes in one
+///     hand.
+///
+/// Order matters: sheets, then the cover, then the chapters. The cover is the
+/// first picture of the cast together, and the chapters are drawn against the
+/// same references the cover used — so the cover is not a special case, it is
+/// simply the first thing drawn after the cast exists.
+///
+/// Deliberately not part of `StoryEngine`: a picture costs more than the whole
+/// story it illustrates — 4,4 centimes against 2,6 for a mini — so it is never
+/// something a turn does on its own. See `docs/story-images.md`.
 library;
 
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:uuid/uuid.dart';
 
@@ -17,7 +35,9 @@ import '../adapters/images/story_illustrator.dart';
 import '../adapters/storage/storage_repo.dart';
 import 'models/beat.dart';
 import 'models/series.dart';
+import 'models/story_character.dart';
 import 'models/story_image.dart';
+import 'models/world.dart';
 import 'picture_prompt.dart';
 
 class IllustrationService {
@@ -36,31 +56,171 @@ class IllustrationService {
   final StorageRepo _repo;
   final Uuid _uuid;
 
+  /// At most this many references travel with one picture.
+  ///
+  /// Gemini accepts two comfortably; beyond that the prompt has to say "the
+  /// fourth reference image", which is more bookkeeping than steering. Two
+  /// also happens to be how many characters a bedtime scene usually holds.
+  static const int maxReferences = 2;
+
   Future<List<StoryImage>> forSeries(String seriesId) =>
       _repo.loadImages(seriesId);
+
+  // ── The world's look ─────────────────────────────────────────────
+
+  /// The world's style guide, writing one first if it has none.
+  ///
+  /// [writeGuide] is the story model: it already knows the arc, the setting
+  /// and the mood, which is exactly the brief an art director works from, so
+  /// it writes the art direction rather than a second model guessing from a
+  /// title. Saved on the world, so every future episode inherits it and the
+  /// series stays in one hand.
+  Future<World> ensureStyleGuide(
+    World world, {
+    required Future<String> Function(String brief) writeGuide,
+  }) async {
+    if (world.styleGuide.trim().isNotEmpty) return world;
+    final brief = styleGuideBrief(
+      worldName: world.name,
+      premise: world.premise.trim().isEmpty
+          ? 'A gentle world for bedtime stories.'
+          : world.premise.trim(),
+      themes: world.allThemes.map((t) => t.name).join(', '),
+    );
+    final guide = (await writeGuide(brief)).trim();
+    if (guide.isEmpty) return world;
+    final updated = world.copyWith(styleGuide: guide);
+    await _repo.saveWorld(updated);
+    return updated;
+  }
+
+  // ── The cast ─────────────────────────────────────────────────────
+
+  /// Every character in the world has a reference drawing, drawing any that
+  /// are missing. Returns them in the order they were given.
+  ///
+  /// A sheet is drawn once and then belongs to the world, not to a story —
+  /// which is the whole point. The tenth episode gets the same fox as the
+  /// first without paying for it again.
+  Future<List<StoryCharacter>> ensureSheets(
+    World world,
+    List<StoryCharacter> cast, {
+    void Function(String name)? onDrawing,
+  }) async {
+    final out = <StoryCharacter>[];
+    for (final character in cast) {
+      if (character.sheetFileKey.isNotEmpty &&
+          await _pictures.has(character.sheetFileKey)) {
+        out.add(character);
+        continue;
+      }
+      onDrawing?.call(character.name);
+      try {
+        final prompt = characterSheetPrompt(
+          character.name,
+          character.description,
+          styleGuide: world.styleGuide,
+        );
+        final drawn = await _illustrator.draw(
+          prompt,
+          kind: StoryImageKind.characterSheet,
+        );
+        final key = 'sheet-${_hash('${world.id}|${character.id}|$prompt')}.png';
+        await _pictures.write(key, drawn.bytes);
+        final updated = character.copyWith(sheetFileKey: key);
+        await _repo.saveCharacter(updated);
+        out.add(updated);
+      } catch (e) {
+        // A character with no sheet still appears, just without a reference —
+        // a slightly less consistent picture beats no picture at all. Said out
+        // loud, though: a silent failure here quietly undoes the whole point
+        // of having sheets.
+        onDrawing?.call('could not draw ${character.name}: $e');
+        out.add(character);
+      }
+    }
+    return out;
+  }
+
+  /// The reference bytes for whichever of [cast] this beat actually mentions,
+  /// most-mentioned first, capped at [maxReferences].
+  ///
+  /// Picking by mention rather than taking the first two matters: a scene
+  /// between the fox and the owl should carry the fox and the owl, not the
+  /// fox and whoever happens to be first in the world's cast list.
+  Future<(List<Uint8List>, List<String>)> _referencesFor(
+    Beat beat,
+    List<StoryCharacter> cast,
+  ) async {
+    final haystack =
+        '${beat.characters.join(' ')} ${beat.summary} '
+                '${beat.title}'
+            .toLowerCase();
+    final mentioned = cast
+        .where((c) => c.sheetFileKey.isNotEmpty)
+        .where((c) => haystack.contains(c.name.toLowerCase()))
+        .take(maxReferences)
+        .toList();
+    final bytes = <Uint8List>[];
+    final names = <String>[];
+    for (final c in mentioned) {
+      final data = await _pictures.read(c.sheetFileKey);
+      if (data == null) continue;
+      bytes.add(data);
+      names.add(c.name);
+    }
+    return (bytes, names);
+  }
+
+  // ── Drawing ──────────────────────────────────────────────────────
 
   /// Draw one picture and keep it.
   ///
   /// The file key is content-addressed over the prompt and the kind rather
   /// than the bytes, so asking twice for the same picture of the same chapter
-  /// overwrites rather than accumulating — a child pressing the button twice
-  /// should not fill the disk.
+  /// overwrites rather than accumulating.
   Future<StoryImage> drawOne({
     required Series series,
     required Beat beat,
     required StoryImageKind kind,
     List<String> cast = const [],
+    List<StoryCharacter> sheets = const [],
+    String? styleGuide,
     int? seed,
   }) async {
-    final prompt = picturePromptFor(kind, series, beat, cast: cast);
-    final drawn = await _illustrator.draw(prompt, kind: kind, seed: seed);
+    final (references, names) = await _referencesFor(beat, sheets);
+    final prompt = picturePromptFor(
+      kind,
+      series,
+      beat,
+      cast: cast,
+      references: names,
+      styleGuide: styleGuide,
+    );
+    final drawn = await _illustrator.draw(
+      prompt,
+      kind: kind,
+      seed: seed,
+      references: references,
+    );
     final key = '${_hash('${kind.name}|${series.id}|${beat.id}|$prompt')}.png';
     await _pictures.write(key, drawn.bytes);
+
+    // A chapter has one picture and a story has one cover, so drawing again
+    // replaces rather than accumulates. Without this, illustrating a story a
+    // second time — to recover a cover lost to a busy server, say — left the
+    // first attempt's rows behind pointing at the same files, and the reader
+    // picked one of them at random.
+    for (final old in await _repo.loadImages(series.id)) {
+      if (old.kind == kind && old.beatId == _slotFor(kind, beat)) {
+        await _repo.deleteImage(old.id);
+      }
+    }
 
     final image = StoryImage(
       id: _uuid.v4(),
       seriesId: series.id,
-      beatId: kind == StoryImageKind.cover ? null : beat.id,
+      beatId: _slotFor(kind, beat),
       kind: kind,
       fileKey: key,
       prompt: drawn.prompt,
@@ -73,8 +233,8 @@ class IllustrationService {
     return image;
   }
 
-  /// Illustrate a whole story: a cover, plus a picture on the chapters that
-  /// earn one. [onProgress] reports pictures finished, for an indicator.
+  /// Illustrate a whole story: the cast designed first, then the cover, then
+  /// the chapters that earn a picture.
   ///
   /// A refusal on one picture does not abandon the rest — a chapter whose
   /// image trips a safety filter simply has no picture, which is a story that
@@ -82,11 +242,23 @@ class IllustrationService {
   Future<List<StoryImage>> illustrate({
     required Series series,
     required List<Beat> beats,
-    List<String> cast = const [],
+    World? world,
+    List<StoryCharacter> cast = const [],
     bool cover = true,
     void Function(int done, int total)? onProgress,
+    void Function(String what)? onStep,
   }) async {
     if (beats.isEmpty) return const [];
+
+    final sheets = world == null
+        ? const <StoryCharacter>[]
+        : await ensureSheets(
+            world,
+            cast,
+            onDrawing: (name) => onStep?.call('designing $name'),
+          );
+    final lines = [for (final c in sheets) c.promptLine];
+
     final wanted = chaptersToIllustrate(beats.length);
     final total = wanted.length + (cover ? 1 : 0);
     final made = <StoryImage>[];
@@ -94,20 +266,41 @@ class IllustrationService {
     Future<void> attempt(Beat beat, StoryImageKind kind) async {
       try {
         made.add(
-          await drawOne(series: series, beat: beat, kind: kind, cast: cast),
+          await drawOne(
+            series: series,
+            beat: beat,
+            kind: kind,
+            cast: lines,
+            sheets: sheets,
+            styleGuide: world?.styleGuide,
+          ),
         );
-      } catch (_) {
-        // Deliberately swallowed: see the doc comment above.
+      } catch (e) {
+        // One picture failing must not abandon the rest — a chapter whose
+        // image trips a safety filter is a story that looks plainer, not a
+        // button that did nothing. But it is reported: the first version
+        // swallowed this silently, and a cover that never appeared looked
+        // exactly like a cover nobody had asked for.
+        onStep?.call('could not draw the ${kind.name}: $e');
       }
       onProgress?.call(made.length, total);
     }
 
-    if (cover) await attempt(beats.first, StoryImageKind.cover);
+    if (cover) {
+      onStep?.call('drawing the cover');
+      await attempt(beats.first, StoryImageKind.cover);
+    }
     for (final index in wanted) {
+      onStep?.call('drawing chapter ${index + 1}');
       await attempt(beats[index], StoryImageKind.chapter);
     }
     return made;
   }
+
+  /// Which slot a picture of this kind occupies: a cover belongs to the story,
+  /// everything else to its chapter.
+  String? _slotFor(StoryImageKind kind, Beat beat) =>
+      kind == StoryImageKind.cover ? null : beat.id;
 
   /// FNV-1a, the same stable hash the audio cache and world covers use.
   /// `String.hashCode` is not stable across runs, and a picture whose file

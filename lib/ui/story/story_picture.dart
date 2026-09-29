@@ -68,6 +68,69 @@ class StoryPicture extends ConsumerWidget {
   }
 }
 
+/// A story's cover, small, for a list.
+///
+/// Always occupies the same space whether or not the story has one: an
+/// illustrated story next to an unillustrated one should differ by what is in
+/// the box, not by the list jumping about. Most stories will never be
+/// illustrated — a picture costs more than the story it belongs to — so the
+/// empty state is the common one and has to look deliberate.
+class StoryCoverThumb extends ConsumerWidget {
+  const StoryCoverThumb({super.key, required this.seriesId});
+
+  final String seriesId;
+
+  /// Portrait, like a book on a shelf, and sized to sit in a ListTile's
+  /// leading slot without stretching the row.
+  static const double _width = 40;
+  static const double _height = 52;
+  static const double _radius = 8;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final images = ref.watch(storyImagesProvider(seriesId)).asData?.value;
+    final cover = images
+        ?.where((i) => i.kind == StoryImageKind.cover)
+        .lastOrNull;
+
+    Widget placeholder() => Container(
+      width: _width,
+      height: _height,
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(_radius),
+      ),
+      child: Icon(
+        Icons.menu_book_outlined,
+        size: 22,
+        color: theme.colorScheme.onSurfaceVariant,
+      ),
+    );
+
+    if (cover == null) return placeholder();
+
+    return FutureBuilder(
+      future: ref.read(pictureStoreProvider).fileFor(cover.fileKey),
+      builder: (context, snapshot) {
+        final file = snapshot.data;
+        // The row must not resize when the file resolves, so the placeholder
+        // stands in while it does and for a picture whose file has gone.
+        if (file == null || !file.existsSync()) return placeholder();
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(_radius),
+          child: Image.file(
+            file,
+            width: _width,
+            height: _height,
+            fit: BoxFit.cover,
+          ),
+        );
+      },
+    );
+  }
+}
+
 /// The title laid over the calm upper third the cover was composed to leave.
 class _Titled extends StatelessWidget {
   const _Titled({required this.picture, required this.title});

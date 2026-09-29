@@ -240,6 +240,7 @@ class DriftStorageRepo implements StorageRepo {
             premise: Value(w.premise),
             extraThemes: Value(_encodeThemes(w.extraThemes)),
             voiceName: Value(w.voiceName),
+            styleGuide: Value(w.styleGuide),
             castChanges: Value(w.pendingCastChanges.encode()),
           ),
         );
@@ -258,6 +259,7 @@ class DriftStorageRepo implements StorageRepo {
     theme: r.theme,
     extraThemes: _decodeThemes(r.extraThemes),
     voiceName: r.voiceName,
+    styleGuide: r.styleGuide,
     pendingCastChanges: CastChanges.decode(r.castChanges),
   );
 
@@ -282,6 +284,7 @@ class DriftStorageRepo implements StorageRepo {
             worldId: c.worldId,
             name: c.name,
             description: Value(c.description),
+            sheetFileKey: Value(c.sheetFileKey),
           ),
         );
   }
@@ -296,6 +299,7 @@ class DriftStorageRepo implements StorageRepo {
     worldId: r.worldId,
     name: r.name,
     description: r.description,
+    sheetFileKey: r.sheetFileKey,
   );
 
   // ── Series ──────────────────────────────────────────────────────
@@ -339,6 +343,7 @@ class DriftStorageRepo implements StorageRepo {
             secondaryLanguage: Value(s.secondaryLanguage),
             bilingualBlend: Value(s.bilingualBlend),
             seedSummary: Value(s.seedSummary),
+            detailLevel: Value(s.detailLevel),
             storyBible: Value(s.storyBible),
             branchedFromBeatId: Value(s.branchedFromBeatId),
             lastReadSeq: Value(s.lastReadSeq),
@@ -369,6 +374,7 @@ class DriftStorageRepo implements StorageRepo {
     secondaryLanguage: r.secondaryLanguage,
     bilingualBlend: r.bilingualBlend,
     seedSummary: r.seedSummary,
+    detailLevel: r.detailLevel,
     storyBible: r.storyBible,
     branchedFromBeatId: r.branchedFromBeatId,
     status: r.status,

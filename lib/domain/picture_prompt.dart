@@ -16,11 +16,94 @@ import 'models/beat.dart';
 import 'models/series.dart';
 import 'models/story_image.dart';
 
-/// A house style every picture shares, so a series looks like one book.
+/// The fallback house style, used only by a world that has not been given one.
 const String _house =
     'Soft painterly children\'s picture-book illustration, warm and gentle, '
     'rounded shapes, calm bedtime mood, safe and cosy. No text, letters, '
     'numbers or writing anywhere in the image.';
+
+/// The look this world is drawn in, falling back to the house style.
+///
+/// A world's own guide is written once from its premise, then repeated
+/// **verbatim** in every prompt. Verbatim matters: paraphrasing it per picture
+/// is how a series ends up looking like twenty artists took a chapter each.
+String styleFor(String? styleGuide) {
+  final own = styleGuide?.trim() ?? '';
+  return own.isEmpty ? _house : own;
+}
+
+/// Ask the story model to design the world's look.
+///
+/// The writer already knows the arc, the setting and the mood, which is
+/// exactly the brief an art director would work from — so it writes the art
+/// direction rather than having a second model guess at it from a title.
+String styleGuideBrief({
+  required String worldName,
+  required String premise,
+  required String themes,
+}) =>
+    'You are the art director for a children\'s picture-book series called '
+    '"$worldName". $premise The stories lean towards: $themes.\n\n'
+    'Write ONE paragraph of art direction, 50 to 70 words, describing the '
+    'look every illustration in this series will share. Cover: the medium and '
+    'finish, the palette in concrete colour words, the quality of light, the '
+    'line and edge treatment, and the overall mood. Be specific enough that '
+    'two different illustrators would produce pictures that sit together in '
+    'the same book.\n\n'
+    'It must suit a calm bedtime story for a young child: warm, safe, never '
+    'harsh or frightening. Describe only the style — no characters, no scene, '
+    'no story. Write it as a direct instruction to an illustrator, with no '
+    'preamble and no heading.';
+
+/// The brief for one character's reference sheet.
+///
+/// Drawn to be *referred to* rather than looked at: plain background, even
+/// light, no scene, nothing competing. The sheet is the specification a later
+/// scene is measured against, and anything decorative in it becomes noise the
+/// model has to ignore.
+String characterSheetPrompt(
+  String name,
+  String description, {
+  String? styleGuide,
+}) =>
+    '${styleFor(styleGuide)}\n\n'
+    'A character reference sheet. The same character shown three times '
+    'against a plain flat cream background: front view, three-quarter view, '
+    'and side view, standing, full body, evenly lit, neutral expression. '
+    'Identical colours, markings and proportions in all three. '
+    'The character is $name${description.trim().isEmpty ? '' : ': '
+              '${description.trim()}'}. '
+    'No scene, no background detail, no props beyond what the character '
+    'wears or carries. No text, labels, letters or writing anywhere.';
+
+/// How to tell the model to obey the reference drawings it was handed.
+///
+/// Named in order, because with two references "the first" and "the second"
+/// is the only handle there is — and the order has to match the order the
+/// images were attached.
+String referenceClause(List<String> names) {
+  if (names.isEmpty) return '';
+  if (names.length == 1) {
+    return 'The reference image shows ${names.first}. Draw them exactly as '
+        'drawn there — same colours, same markings, same proportions. ';
+  }
+  final labelled = <String>[];
+  for (var i = 0; i < names.length; i++) {
+    labelled.add(
+      '${i == 0 ? 'The first' : 'the ${_ordinal(i + 1)}'} '
+      'reference image shows ${names[i]}',
+    );
+  }
+  return '${labelled.join('; ')}. Draw each of them exactly as drawn there — '
+      'same colours, same markings, same proportions. ';
+}
+
+String _ordinal(int n) => switch (n) {
+  2 => 'second',
+  3 => 'third',
+  4 => 'fourth',
+  _ => '${n}th',
+};
 
 /// The look a Lunii can actually show: sixteen flat colours at 320×240 turn a
 /// painting into mud, so the picture has to be built out of shapes big enough
@@ -54,8 +137,15 @@ String _cast(List<String> cast) => cast.isEmpty
           '${cast.take(4).join('; ')}.';
 
 /// A picture for one chapter.
-String chapterPicturePrompt(Beat beat, {List<String> cast = const []}) =>
-    '$_house A scene from a bedtime story: ${_scene(beat)}.${_cast(cast)} '
+String chapterPicturePrompt(
+  Beat beat, {
+  List<String> cast = const [],
+  List<String> references = const [],
+  String? styleGuide,
+}) =>
+    '${styleFor(styleGuide)}\n\n'
+    '${referenceClause(references)}'
+    'A scene from a bedtime story: ${_scene(beat)}.${_cast(cast)} '
     'Show one clear moment rather than several. Leave the mood calm and '
     'unfrightening even if the story has a problem in it.';
 
@@ -70,8 +160,12 @@ String coverPicturePrompt(
   Series series,
   Beat opening, {
   List<String> cast = const [],
+  List<String> references = const [],
+  String? styleGuide,
 }) =>
-    '$_house A storybook cover in the style of a warm film poster, portrait. '
+    '${styleFor(styleGuide)}\n\n'
+    '${referenceClause(references)}'
+    'A storybook cover in the style of a warm film poster, portrait. '
     'The main characters stand together in the lower two thirds, looking out '
     'at the reader: ${_scene(opening)}.${_cast(cast)} '
     'The upper third is calm, uncluttered sky or space with no detail in it, '
@@ -79,8 +173,19 @@ String coverPicturePrompt(
     'Inviting, the kind of cover a child would pick off a shelf.';
 
 /// The same story, drawn so the storyteller device can show it.
-String luniiPicturePrompt(Series series, Beat opening) =>
-    '$_flat A scene from a bedtime story: ${_scene(opening)}. '
+///
+/// The world's style guide is deliberately *not* used here. It describes a
+/// painterly look the device cannot show — sixteen flat colours at 320×240
+/// turn a painting into mud — so this keeps its own flat brief. The character
+/// references still apply: the fox should stay the same fox even in silhouette.
+String luniiPicturePrompt(
+  Series series,
+  Beat opening, {
+  List<String> references = const [],
+}) =>
+    '$_flat\n\n'
+    '${referenceClause(references)}'
+    'A scene from a bedtime story: ${_scene(opening)}. '
     'One or two characters only, large in the frame, against a simple '
     'background.';
 
@@ -90,10 +195,32 @@ String picturePromptFor(
   Series series,
   Beat beat, {
   List<String> cast = const [],
+  List<String> references = const [],
+  String? styleGuide,
 }) => switch (kind) {
-  StoryImageKind.cover => coverPicturePrompt(series, beat, cast: cast),
-  StoryImageKind.chapter => chapterPicturePrompt(beat, cast: cast),
-  StoryImageKind.lunii => luniiPicturePrompt(series, beat),
+  StoryImageKind.cover => coverPicturePrompt(
+    series,
+    beat,
+    cast: cast,
+    references: references,
+    styleGuide: styleGuide,
+  ),
+  StoryImageKind.chapter => chapterPicturePrompt(
+    beat,
+    cast: cast,
+    references: references,
+    styleGuide: styleGuide,
+  ),
+  StoryImageKind.lunii => luniiPicturePrompt(
+    series,
+    beat,
+    references: references,
+  ),
+  StoryImageKind.characterSheet => characterSheetPrompt(
+    beat.title,
+    beat.summary,
+    styleGuide: styleGuide,
+  ),
 };
 
 /// Which chapters of a story get a picture.

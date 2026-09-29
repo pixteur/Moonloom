@@ -37,7 +37,16 @@ class DrawnPicture {
 }
 
 abstract class StoryIllustrator {
-  Future<DrawnPicture> draw(String prompt, {StoryImageKind kind, int? seed});
+  /// [references] are handed to the model as input images, in order. The
+  /// prompt names them "the first", "the second" and so on, so this order and
+  /// the order in the prompt have to agree — which is why both are built in
+  /// one place, by `IllustrationService`.
+  Future<DrawnPicture> draw(
+    String prompt, {
+    StoryImageKind kind,
+    int? seed,
+    List<Uint8List> references,
+  });
 }
 
 /// Nano Banana 2 — `gemini-3.1-flash-image`.
@@ -68,6 +77,7 @@ class GeminiIllustrator implements StoryIllustrator {
     StoryImageKind.cover => '3:4',
     StoryImageKind.chapter => '4:3',
     StoryImageKind.lunii => '4:3',
+    StoryImageKind.characterSheet => '4:3',
   };
 
   /// 2K everywhere it might be printed, 1K for the device, which throws away
@@ -80,6 +90,7 @@ class GeminiIllustrator implements StoryIllustrator {
     String prompt, {
     StoryImageKind kind = StoryImageKind.chapter,
     int? seed,
+    List<Uint8List> references = const [],
   }) async {
     final key = await _secrets.readKey(keyName);
     if (key == null || key.isEmpty) {
@@ -95,6 +106,15 @@ class GeminiIllustrator implements StoryIllustrator {
           'contents': [
             {
               'parts': [
+                // References first, then the instruction, so the instruction
+                // reads as being about the pictures above it.
+                for (final bytes in references)
+                  {
+                    'inline_data': {
+                      'mime_type': 'image/png',
+                      'data': base64.encode(bytes),
+                    },
+                  },
                 {'text': prompt},
               ],
             },

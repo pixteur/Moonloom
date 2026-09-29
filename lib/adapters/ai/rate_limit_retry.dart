@@ -1,11 +1,16 @@
 import 'provider_exceptions.dart';
 
-/// Retry [action] on HTTP 429 (rate limit) with exponential backoff.
+/// Retry [action] on a busy server — 429 or 503 — with exponential backoff.
 ///
 /// Gemini's free tier caps requests per minute (e.g. 10/min for TTS) and
 /// returns 429 with a short "retry in ~1s" window, so a few spaced retries
-/// recover transparently instead of failing the narration/story. Non-429 errors
-/// rethrow immediately; gives up (rethrows the 429) after [maxAttempts].
+/// recover transparently instead of failing the narration/story.
+///
+/// 503 belongs here for the same reason and was missing: the image model
+/// answers "This model is currently experiencing high demand. Spikes in demand
+/// are usually temporary. Please try again later." — which is the server
+/// asking to be retried. Without it, one busy moment silently cost a story its
+/// cover. Everything else rethrows immediately; gives up after [maxAttempts].
 ///
 /// [cancelled] lets a caller bail out early (e.g. the user stopped playback).
 Future<T> retryOnRateLimit<T>(
@@ -19,10 +24,9 @@ Future<T> retryOnRateLimit<T>(
     try {
       return await action();
     } on ProviderRequestException catch (e) {
+      final retryable = e.statusCode == 429 || e.statusCode == 503;
       final giveUp =
-          e.statusCode != 429 ||
-          attempt >= maxAttempts ||
-          (cancelled?.call() ?? false);
+          !retryable || attempt >= maxAttempts || (cancelled?.call() ?? false);
       if (giveUp) rethrow;
       await Future<void>.delayed(delay);
       delay *= 2;

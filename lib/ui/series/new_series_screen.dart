@@ -166,6 +166,7 @@ class _NewSeriesScreenState extends ConsumerState<NewSeriesScreen> {
           secondaryLanguage: _language == _LanguageMode.one
               ? null
               : _secondLanguage,
+          detailLevel: child.detailLevel,
           bilingualBlend: switch (_language) {
             _LanguageMode.one => null,
             _LanguageMode.sprinkle => BilingualBlend.sprinkle,

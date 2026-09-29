@@ -30,6 +30,11 @@ enum StoryImageKind {
   /// A flat, high-contrast version for the storyteller device, which takes
   /// 320×240 in sixteen colours and turns a painterly image into mud.
   lunii,
+
+  /// A reference drawing of one character — three views, plain background,
+  /// even light — handed back to the model every time that character appears.
+  /// Never shown to a child: this is a specification, not a picture.
+  characterSheet,
 }
 
 class StoryImage {

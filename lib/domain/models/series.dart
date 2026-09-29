@@ -1,3 +1,5 @@
+import 'child_profile.dart';
+
 /// A storyline. A child can have several running in parallel; "branching"
 /// starts a new one (optionally forked from a beat). See `docs/data-model.md`.
 class Series {
@@ -16,6 +18,7 @@ class Series {
     this.bilingualEnabled = false,
     this.secondaryLanguage,
     this.bilingualBlend,
+    this.detailLevel,
     this.seedSummary = '',
     this.storyBible = '',
     this.branchedFromBeatId,
@@ -65,6 +68,14 @@ class Series {
   final String? secondaryLanguage;
   final BilingualBlend? bilingualBlend;
 
+  /// The shape this story was asked for — a mini, a few nights, or a week.
+  ///
+  /// Recorded so the bookshelf can group by it. Nullable because stories
+  /// written before this existed never had one, and inferring it from the
+  /// chapter count would mislabel every story still being written: a week-long
+  /// story on chapter two is not a medium one.
+  final DetailLevel? detailLevel;
+
   /// Premise this series starts from (distilled from the quiz + briefs).
   final String seedSummary;
 
@@ -109,6 +120,7 @@ class Series {
       bilingualEnabled: bilingualEnabled,
       secondaryLanguage: secondaryLanguage,
       bilingualBlend: bilingualBlend,
+      detailLevel: detailLevel,
       seedSummary: seedSummary ?? this.seedSummary,
       storyBible: storyBible ?? this.storyBible,
       branchedFromBeatId: branchedFromBeatId,

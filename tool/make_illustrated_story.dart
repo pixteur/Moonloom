@@ -26,6 +26,7 @@ import 'package:sleepytime/domain/illustration_service.dart';
 import 'package:sleepytime/domain/models/beat.dart';
 import 'package:sleepytime/domain/models/child_profile.dart';
 import 'package:sleepytime/domain/models/series.dart';
+import 'package:sleepytime/domain/prompt_builder.dart';
 import 'package:sleepytime/domain/series_service.dart';
 import 'package:sleepytime/domain/story_engine.dart';
 import 'package:uuid/uuid.dart';
@@ -76,6 +77,7 @@ Future<void> main(List<String> args) async {
   final write = args.contains('--write');
   final childName = _opt(args, '--child') ?? 'Mia';
   final worldName = _opt(args, '--world');
+  final only = _opt(args, '--illustrate');
   final length = _opt(args, '--length') ?? 'short';
   final detail = switch (length) {
     'short' => DetailLevel.short,
@@ -113,14 +115,34 @@ Future<void> main(List<String> args) async {
           (w) => w.name.toLowerCase() == worldName.toLowerCase(),
           orElse: () => worlds.first,
         );
-  final cast = (await repo.loadCharacters(
-    world.id,
-  )).map((c) => c.promptLine).toList();
+  final cast = await repo.loadCharacters(world.id);
 
   stdout.writeln('child:  ${child.displayName} (${child.age})');
   stdout.writeln('world:  ${world.name}');
-  stdout.writeln('cast:   ${cast.isEmpty ? '(none saved)' : cast.join('; ')}');
+  stdout.writeln(
+    'cast:   '
+    '${cast.isEmpty ? '(none saved)' : cast.map((c) => c.name).join(', ')}',
+  );
   stdout.writeln('length: $length');
+
+  // Illustrating a story that already exists, rather than writing a new one.
+  // The cover on "The Ancient Sea Knot" was lost to a 503 before 503s were
+  // retried, and rewriting a seven-chapter story to recover one picture would
+  // be an absurd way to fix it.
+  Series? existing;
+  if (only != null) {
+    final all = await repo.loadSeries(child.id);
+    existing = all.cast<Series?>().firstWhere(
+      (s) => s!.title.toLowerCase().contains(only.toLowerCase()),
+      orElse: () => null,
+    );
+    if (existing == null) {
+      stdout.writeln('No story of ${child.displayName}\'s matching "$only".');
+      await db.close();
+      return;
+    }
+    stdout.writeln('story:  "${existing.title}" (already written)');
+  }
   if (!write) {
     stdout.writeln('\nDry run — nothing written. Add --write.');
     await db.close();
@@ -131,32 +153,38 @@ Future<void> main(List<String> args) async {
     ai: GeminiProvider(secrets: secrets, httpClient: client),
     repo: repo,
   );
-  final series = await SeriesService(repo).create(
-    childId: child.id,
-    title: 'Naming it…',
-    autoTitle: true,
-    theme: world.theme,
-    extraThemes: world.extraThemes,
-    worldId: world.id,
-    heroMode: HeroMode.surprise,
-  );
+  final Series series;
+  if (existing != null) {
+    series = existing;
+  } else {
+    series = await SeriesService(repo).create(
+      childId: child.id,
+      title: 'Naming it…',
+      autoTitle: true,
+      theme: world.theme,
+      extraThemes: world.extraThemes,
+      worldId: world.id,
+      heroMode: HeroMode.surprise,
+      detailLevel: detail,
+    );
 
-  stdout.writeln('\nwriting…');
-  final reader = child.copyWith(detailLevel: detail);
-  var beat = await engine.takeTurn(
-    child: reader,
-    series: series,
-    intent: StoryIntent.dice,
-  );
-  stdout.writeln('  1. ${beat.title}');
-  var guard = 0;
-  while (!beat.isFinal && guard++ < 10) {
-    beat = await engine.takeTurn(
+    stdout.writeln('\nwriting…');
+    final reader = child.copyWith(detailLevel: detail);
+    var beat = await engine.takeTurn(
       child: reader,
       series: series,
-      intent: StoryIntent.continued,
+      intent: StoryIntent.dice,
     );
-    stdout.writeln('  ${beat.seq + 1}. ${beat.title}');
+    stdout.writeln('  1. ${beat.title}');
+    var guard = 0;
+    while (!beat.isFinal && guard++ < 10) {
+      beat = await engine.takeTurn(
+        child: reader,
+        series: series,
+        intent: StoryIntent.continued,
+      );
+      stdout.writeln('  ${beat.seq + 1}. ${beat.title}');
+    }
   }
 
   final saved = await repo.loadSeriesById(series.id) ?? series;
@@ -164,23 +192,43 @@ Future<void> main(List<String> args) async {
   stdout.writeln('\n"${saved.title}" — ${beats.length} chapters');
 
   stdout.writeln('\ndrawing…');
-  final pictures =
-      await IllustrationService(
-        illustrator: GeminiIllustrator(secrets: secrets, httpClient: client),
-        pictures: FilePictureStore(
-          root: Directory(
-            '${Platform.environment['USERPROFILE']}'
-            '\\Documents\\Sleepytime\\pictures',
-          ),
-        ),
-        repo: repo,
-        uuid: const Uuid(),
-      ).illustrate(
-        series: saved,
-        beats: beats,
-        cast: cast,
-        onProgress: (done, total) => stdout.writeln('  $done/$total'),
-      );
+  final illustration = IllustrationService(
+    illustrator: GeminiIllustrator(secrets: secrets, httpClient: client),
+    pictures: FilePictureStore(
+      root: Directory(
+        '${Platform.environment['USERPROFILE']}'
+        '\\Documents\\Sleepytime\\pictures',
+      ),
+    ),
+    repo: repo,
+    uuid: const Uuid(),
+  );
+
+  // The world's look is written once, by the model that writes the stories —
+  // it already knows the arc and the setting, which is the brief an art
+  // director works from.
+  final styled = await illustration.ensureStyleGuide(
+    world,
+    writeGuide: (brief) async {
+      final segment = await GeminiProvider(
+        secrets: secrets,
+        httpClient: client,
+      ).generate(StoryPrompt(system: brief, user: 'Write the art direction.'));
+      return segment.storyText;
+    },
+  );
+  if (styled.styleGuide != world.styleGuide) {
+    stdout.writeln('  style: ${styled.styleGuide}\n');
+  }
+
+  final pictures = await illustration.illustrate(
+    series: saved,
+    beats: beats,
+    world: styled,
+    cast: cast,
+    onProgress: (done, total) => stdout.writeln('  $done/$total'),
+    onStep: (what) => stdout.writeln('  $what'),
+  );
 
   for (final p in pictures) {
     stdout.writeln(

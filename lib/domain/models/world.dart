@@ -13,6 +13,7 @@ class World {
     this.theme = StoryTheme.cozy,
     this.extraThemes = const [],
     this.voiceName = '',
+    this.styleGuide = '',
     this.pendingCastChanges = CastChanges.none,
   });
 
@@ -50,6 +51,15 @@ class World {
   /// the picker says so out loud.
   final String voiceName;
 
+  /// The look every picture in this world shares — palette, medium, light,
+  /// line quality — written once from the world's own premise and then
+  /// repeated verbatim in every image prompt.
+  ///
+  /// Text alone cannot pin a *character* down, which is what character sheets
+  /// are for; but it pins the *world* down very well, and a world illustrated
+  /// in one hand across twenty episodes is most of what makes it a place.
+  final String styleGuide;
+
   /// Cast edits the next story still has to acknowledge (arrivals to introduce,
   /// departures to write out gently). Cleared once a chapter has used them.
   final CastChanges pendingCastChanges;
@@ -60,6 +70,7 @@ class World {
     StoryTheme? theme,
     List<StoryTheme>? extraThemes,
     String? voiceName,
+    String? styleGuide,
     CastChanges? pendingCastChanges,
   }) => World(
     id: id,
@@ -69,6 +80,7 @@ class World {
     theme: theme ?? this.theme,
     extraThemes: extraThemes ?? this.extraThemes,
     voiceName: voiceName ?? this.voiceName,
+    styleGuide: styleGuide ?? this.styleGuide,
     pendingCastChanges: pendingCastChanges ?? this.pendingCastChanges,
   );
 }

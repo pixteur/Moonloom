@@ -92,6 +92,12 @@ class Worlds extends Table {
   /// setting. Only the voice name, never the engine — see World.voiceName.
   TextColumn get voiceName => text().withDefault(const Constant(''))();
 
+  /// The look every picture in this world shares — palette, medium, light,
+  /// line quality. Written once from the world's own premise, then repeated
+  /// verbatim in every image prompt, which is what stops each episode being
+  /// illustrated by a different artist.
+  TextColumn get styleGuide => text().withDefault(const Constant(''))();
+
   /// Cast edits (arrivals/departures) the next story must acknowledge, as JSON.
   TextColumn get castChanges => text().withDefault(const Constant('{}'))();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
@@ -110,6 +116,12 @@ class StoryCharacters extends Table {
       text().references(Worlds, #id, onDelete: KeyAction.cascade)();
   TextColumn get name => text()();
   TextColumn get description => text().withDefault(const Constant(''))();
+
+  /// A reference drawing of this character, handed back to the image model
+  /// every time they appear. Text cannot pin a face down — "a small white
+  /// fox" describes a thousand foxes — so the picture is the specification.
+  TextColumn get sheetFileKey => text().withDefault(const Constant(''))();
+
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 
   @override
@@ -150,6 +162,12 @@ class SeriesTable extends Table {
   /// means "whatever the child is set to" — the case for every story written
   /// before a bilingual household needed two.
   TextColumn get baseLanguage => text().nullable()();
+
+  /// The length this story was asked for, so the bookshelf can group by it.
+  /// Nullable: stories written before this existed never recorded a shape,
+  /// and guessing one from the chapter count would mislabel every story still
+  /// being written.
+  IntColumn get detailLevel => intEnum<DetailLevel>().nullable()();
 
   /// Reading position: the chapter last opened and when, so the bookshelf can
   /// offer "Continue — Chapter 4".
@@ -265,7 +283,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 11;
+  int get schemaVersion => 12;
 
   /// The library's file name, under the user's documents folder.
   static const String fileName = 'sleepytime.sqlite';
@@ -376,6 +394,27 @@ class AppDatabase extends _$AppDatabase {
           () => m.createTable(storyImages),
         );
       }
+      // v11 → v12: a world's look, a character's reference drawing, and the
+      // shape a story was asked for.
+      if (from < 12) {
+        await _addColumnIfMissing(
+          'worlds',
+          'style_guide',
+          () => m.addColumn(worlds, worlds.styleGuide),
+        );
+        await _addColumnIfMissing(
+          // The SQL table is `characters`; `storyCharacters` is the Dart name.
+          'characters',
+          'sheet_file_key',
+          () => m.addColumn(storyCharacters, storyCharacters.sheetFileKey),
+        );
+        await _addColumnIfMissing(
+          // The SQL table is `series`; `seriesTable` is only the Dart name.
+          'series',
+          'detail_level',
+          () => m.addColumn(seriesTable, seriesTable.detailLevel),
+        );
+      }
     },
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON');
@@ -417,6 +456,19 @@ class AppDatabase extends _$AppDatabase {
       await _createTableIfMissing(
         'story_images',
         () => createMigrator().createTable(storyImages),
+      );
+      await _ensureColumn('worlds', 'style_guide', "TEXT NOT NULL DEFAULT ''");
+      await _ensureColumn(
+        // The SQL table is `characters`; `storyCharacters` is the Dart name.
+        'characters',
+        'sheet_file_key',
+        "TEXT NOT NULL DEFAULT ''",
+      );
+      await _ensureColumn(
+        // The SQL table is `series`; `seriesTable` is only the Dart name.
+        'series',
+        'detail_level',
+        'INTEGER',
       );
     },
   );
