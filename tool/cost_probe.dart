@@ -61,7 +61,12 @@ class _Usage {
 
 Future<void> main(List<String> args) async {
   final model = _opt(args, '--model') ?? GeminiProvider.defaultModel;
-  final chapters = int.tryParse(_opt(args, '--chapters') ?? '') ?? 6;
+  final chapters = int.tryParse(_opt(args, '--chapters') ?? '') ?? 7;
+  final detail = switch (_opt(args, '--length') ?? 'long') {
+    'short' => DetailLevel.short,
+    'medium' => DetailLevel.medium,
+    _ => DetailLevel.long,
+  };
   final key = await _key('gemini');
   if (key == null) {
     stdout.writeln('No Gemini key saved.');
@@ -71,11 +76,11 @@ Future<void> main(List<String> args) async {
   const builder = PromptBuilder();
 
   // A long story for an eight-year-old: the most expensive normal case.
-  const child = ChildProfile(
+  final child = ChildProfile(
     id: 'c1',
     displayName: 'Mia',
     age: 8,
-    detailLevel: DetailLevel.long,
+    detailLevel: detail,
   );
   var series = const Series(
     id: 's1',

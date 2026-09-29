@@ -344,13 +344,13 @@ class _NewSeriesScreenState extends ConsumerState<NewSeriesScreen> {
               // only thing they are actually choosing between.
               ButtonSegment(
                 value: DetailLevel.short,
-                label: Text('Short'),
-                tooltip: '3 to 4 chapters',
+                label: Text('Mini'),
+                tooltip: 'One sitting, start to finish',
               ),
               ButtonSegment(
                 value: DetailLevel.medium,
-                label: Text('Medium'),
-                tooltip: '4 to 5 chapters',
+                label: Text('A few nights'),
+                tooltip: '3 to 4 chapters',
               ),
               ButtonSegment(
                 value: DetailLevel.long,

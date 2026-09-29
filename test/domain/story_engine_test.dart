@@ -295,16 +295,28 @@ void main() {
     expect(saved.last.isFinal, isTrue);
   });
 
-  test('a long story is a week of them, a short one three', () async {
+  test('a week, a few nights, or one sitting', () async {
     // "Long" has to mean long: asking for long stories and getting two
     // chapters is being told one thing and given another. Long is now exactly
     // seven — one a night, Monday to Sunday — so it is stated as a count
     // rather than a floor, and the reason travels with it.
+    // A fresh series per length. Sharing one made each call the *next*
+    // chapter of the last, so the mini was asked for as chapter three — which
+    // is a real situation, but not the one under test here.
     Future<String> promptFor(DetailLevel level) async {
       final ai = _RecordingProvider();
+      final own = Series(
+        id: 's-${level.name}',
+        childId: series.childId,
+        title: 'For ${level.name}',
+        theme: series.theme,
+        heroMode: series.heroMode,
+        seedSummary: series.seedSummary,
+      );
+      await repo.saveSeries(own);
       await StoryEngine(ai: ai, repo: repo).takeTurn(
         child: child.copyWith(detailLevel: level),
-        series: series,
+        series: own,
         intent: StoryIntent.dice,
       );
       return ai.prompt!.system;
@@ -315,8 +327,11 @@ void main() {
     expect(long, contains('one for each night of the week'));
     expect(long, isNot(contains('7–7')));
 
-    expect(await promptFor(DetailLevel.medium), contains('of at least 4'));
-    expect(await promptFor(DetailLevel.short), contains('of at least 3'));
+    expect(await promptFor(DetailLevel.medium), contains('of at least 3'));
+
+    // A mini is one sitting, so it never sees the "how many chapters" brief
+    // at all — chapter one is already the last.
+    expect(await promptFor(DetailLevel.short), contains('MINI EPISODE'));
   });
 
   group('a long story is exactly a week', () {
@@ -388,7 +403,7 @@ void main() {
           intent: StoryIntent.continued,
         );
       }
-      expect(beat.seq, 4); // five chapters
+      expect(beat.seq, 3); // four chapters
     });
 
     test('an explicit cap still overrules the length', () async {

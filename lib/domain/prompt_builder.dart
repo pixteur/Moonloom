@@ -63,10 +63,21 @@ class PromptBuilder {
       )
       ..writeln(
         req.mustConclude
-            ? 'This is chapter ${req.chapterNumber} and the FINAL chapter of the '
-                  'story. Bring everything to a warm, satisfying close now, tie '
-                  'off the open threads, end peacefully and ready for sleep, and '
-                  'set "is_final" to true.'
+            ? (req.chapterNumber == 1
+                  // A mini episode: one sitting, beginning to end. The wording
+                  // below would tell the model to wrap up chapters that were
+                  // never written, and a model told to conclude a story it has
+                  // not begun writes an ending with no middle.
+                  ? 'This is a MINI EPISODE: one complete little story told in '
+                        'a single sitting, with a beginning, a middle and a '
+                        'proper ending. Nothing is left open and there is no '
+                        'next chapter. Give it a small, whole shape — one '
+                        'problem, one turn, one warm resolution — and end '
+                        'peacefully, ready for sleep. Set "is_final" to true.'
+                  : 'This is chapter ${req.chapterNumber} and the FINAL chapter '
+                        'of the story. Bring everything to a warm, satisfying '
+                        'close now, tie off the open threads, end peacefully '
+                        'and ready for sleep, and set "is_final" to true.')
             : '${_lengthBrief(req)} Each chapter should end on a gentle, '
                   'calm note.'
                   '${req.mayNotEndYet ? " There are at least "
@@ -771,7 +782,8 @@ class PromptBuilder {
   }
 
   String _lengthFor(DetailLevel level) => switch (level) {
-    DetailLevel.short => 'a short bedtime tale (about 150–250 words)',
+    DetailLevel.short =>
+      'a whole little story in one sitting (about 250–350 words)',
     DetailLevel.medium => 'a medium story (about 300–450 words)',
     DetailLevel.long => 'a longer chapter (about 500–700 words)',
   };

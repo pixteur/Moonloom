@@ -77,8 +77,8 @@ class StoryEngine {
   int _floorFor(DetailLevel level) =>
       (_minChapters ??
               switch (level) {
-                DetailLevel.short => 3,
-                DetailLevel.medium => 4,
+                DetailLevel.short => 1,
+                DetailLevel.medium => 3,
                 DetailLevel.long => _weekOfChapters,
               })
           .clamp(1, _maxChapters);
@@ -91,8 +91,11 @@ class StoryEngine {
   /// generation burning through quota when a model will not conclude, and
   /// nothing here may exceed it.
   int _ceilingFor(DetailLevel level) => switch (level) {
-    DetailLevel.short => 4,
-    DetailLevel.medium => 5,
+    // One sitting, beginning to end — a mini episode rather than a short
+    // serial. A child who wants a story tonight and nothing hanging over
+    // tomorrow is asking for a different thing, not a smaller one.
+    DetailLevel.short => 1,
+    DetailLevel.medium => 4,
     DetailLevel.long => _weekOfChapters,
   }.clamp(_floorFor(level), _maxChapters);
 
