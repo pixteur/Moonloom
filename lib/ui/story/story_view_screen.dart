@@ -11,6 +11,7 @@ import '../../domain/models/series.dart';
 import '../common/error_banner.dart';
 import '../common/marquee_text.dart';
 import 'sleep_timer.dart';
+import 'story_picture.dart';
 
 /// Displays one chapter, reads it aloud (auto-plays, streamed paragraph-by-
 /// paragraph), and pages through the story: Back = previous chapter, Next =
@@ -599,6 +600,10 @@ class _StoryViewScreenState extends ConsumerState<StoryViewScreen> {
                           )
                         : _ReadingText(
                             text: widget.beat.text,
+                            header: StoryPicture(
+                              seriesId: widget.beat.seriesId,
+                              beatId: widget.beat.id,
+                            ),
                             progress: _tts.progressStream,
                             style: theme.textTheme.titleMedium?.copyWith(
                               height: 1.6,
@@ -719,6 +724,7 @@ class _ReadingText extends StatefulWidget {
     required this.text,
     required this.progress,
     this.style,
+    this.header,
     this.footer,
   });
 
@@ -726,6 +732,11 @@ class _ReadingText extends StatefulWidget {
   final Stream<double> progress;
   final TextStyle? style;
   final Widget? footer;
+
+  /// The chapter's picture, when it has one — above the words, so a child has
+  /// something to settle on while the voice starts, and then it stops
+  /// competing with the reading.
+  final Widget? header;
 
   @override
   State<_ReadingText> createState() => _ReadingTextState();
@@ -940,6 +951,7 @@ class _ReadingTextState extends State<_ReadingText> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            if (widget.header != null) widget.header!,
             for (var i = 0; i < _paras.length; i++)
               Padding(
                 key: _paraKeys[i],

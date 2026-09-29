@@ -35,6 +35,11 @@ class LibraryPaths {
   /// Exported single-file audiobooks (whole story joined into one audio file).
   static Future<Directory> audiobooks() => _sub('audiobooks');
 
+  /// Story pictures. Kept in the library rather than a cache, because unlike
+  /// narration a picture cannot be regenerated — the model does not reproduce
+  /// one from its prompt, so these files are the only copy there is.
+  static Future<Directory> pictures() => _sub('pictures');
+
   /// Exported Lunii story packs (STUdio archive zips).
   static Future<Directory> luniiPacks() => _sub('lunii');
 

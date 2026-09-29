@@ -5,6 +5,7 @@ import '../../domain/models/learned_profile.dart';
 import '../../domain/models/quiz_result.dart';
 import '../../domain/models/series.dart';
 import '../../domain/models/story_character.dart';
+import '../../domain/models/story_image.dart';
 import '../../domain/models/world.dart';
 
 /// Local-only persistence at launch; the same interface backs optional cloud
@@ -53,4 +54,10 @@ abstract class StorageRepo {
   Future<List<Beat>> loadBeats(String seriesId);
   Future<void> saveBeat(Beat beat);
   Future<void> deleteBeat(String id);
+
+  // ── Pictures ────────────────────────────────────────────────────
+  /// Every picture for a story, covers first then chapters in order.
+  Future<List<StoryImage>> loadImages(String seriesId);
+  Future<void> saveImage(StoryImage image);
+  Future<void> deleteImage(String id);
 }

@@ -4941,6 +4941,650 @@ class BeatsCompanion extends UpdateCompanion<BeatRow> {
   }
 }
 
+class $StoryImagesTable extends StoryImages
+    with TableInfo<$StoryImagesTable, StoryImageRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $StoryImagesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _seriesIdMeta = const VerificationMeta(
+    'seriesId',
+  );
+  @override
+  late final GeneratedColumn<String> seriesId = GeneratedColumn<String>(
+    'series_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES series (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _beatIdMeta = const VerificationMeta('beatId');
+  @override
+  late final GeneratedColumn<String> beatId = GeneratedColumn<String>(
+    'beat_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<StoryImageKind, int> kind =
+      GeneratedColumn<int>(
+        'kind',
+        aliasedName,
+        false,
+        type: DriftSqlType.int,
+        requiredDuringInsert: true,
+      ).withConverter<StoryImageKind>($StoryImagesTable.$converterkind);
+  static const VerificationMeta _fileKeyMeta = const VerificationMeta(
+    'fileKey',
+  );
+  @override
+  late final GeneratedColumn<String> fileKey = GeneratedColumn<String>(
+    'file_key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _promptMeta = const VerificationMeta('prompt');
+  @override
+  late final GeneratedColumn<String> prompt = GeneratedColumn<String>(
+    'prompt',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _seedMeta = const VerificationMeta('seed');
+  @override
+  late final GeneratedColumn<int> seed = GeneratedColumn<int>(
+    'seed',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _modelMeta = const VerificationMeta('model');
+  @override
+  late final GeneratedColumn<String> model = GeneratedColumn<String>(
+    'model',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _sizeMeta = const VerificationMeta('size');
+  @override
+  late final GeneratedColumn<String> size = GeneratedColumn<String>(
+    'size',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('2K'),
+  );
+  static const VerificationMeta _aspectMeta = const VerificationMeta('aspect');
+  @override
+  late final GeneratedColumn<String> aspect = GeneratedColumn<String>(
+    'aspect',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('4:3'),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    seriesId,
+    beatId,
+    kind,
+    fileKey,
+    prompt,
+    seed,
+    model,
+    size,
+    aspect,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'story_images';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<StoryImageRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('series_id')) {
+      context.handle(
+        _seriesIdMeta,
+        seriesId.isAcceptableOrUnknown(data['series_id']!, _seriesIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_seriesIdMeta);
+    }
+    if (data.containsKey('beat_id')) {
+      context.handle(
+        _beatIdMeta,
+        beatId.isAcceptableOrUnknown(data['beat_id']!, _beatIdMeta),
+      );
+    }
+    if (data.containsKey('file_key')) {
+      context.handle(
+        _fileKeyMeta,
+        fileKey.isAcceptableOrUnknown(data['file_key']!, _fileKeyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fileKeyMeta);
+    }
+    if (data.containsKey('prompt')) {
+      context.handle(
+        _promptMeta,
+        prompt.isAcceptableOrUnknown(data['prompt']!, _promptMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_promptMeta);
+    }
+    if (data.containsKey('seed')) {
+      context.handle(
+        _seedMeta,
+        seed.isAcceptableOrUnknown(data['seed']!, _seedMeta),
+      );
+    }
+    if (data.containsKey('model')) {
+      context.handle(
+        _modelMeta,
+        model.isAcceptableOrUnknown(data['model']!, _modelMeta),
+      );
+    }
+    if (data.containsKey('size')) {
+      context.handle(
+        _sizeMeta,
+        size.isAcceptableOrUnknown(data['size']!, _sizeMeta),
+      );
+    }
+    if (data.containsKey('aspect')) {
+      context.handle(
+        _aspectMeta,
+        aspect.isAcceptableOrUnknown(data['aspect']!, _aspectMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  StoryImageRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return StoryImageRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      seriesId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}series_id'],
+      )!,
+      beatId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}beat_id'],
+      ),
+      kind: $StoryImagesTable.$converterkind.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.int,
+          data['${effectivePrefix}kind'],
+        )!,
+      ),
+      fileKey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}file_key'],
+      )!,
+      prompt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}prompt'],
+      )!,
+      seed: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}seed'],
+      ),
+      model: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}model'],
+      )!,
+      size: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}size'],
+      )!,
+      aspect: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}aspect'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $StoryImagesTable createAlias(String alias) {
+    return $StoryImagesTable(attachedDatabase, alias);
+  }
+
+  static JsonTypeConverter2<StoryImageKind, int, int> $converterkind =
+      const EnumIndexConverter<StoryImageKind>(StoryImageKind.values);
+}
+
+class StoryImageRow extends DataClass implements Insertable<StoryImageRow> {
+  final String id;
+  final String seriesId;
+
+  /// Null for a cover, which belongs to the story rather than a chapter.
+  final String? beatId;
+  final StoryImageKind kind;
+  final String fileKey;
+  final String prompt;
+  final int? seed;
+  final String model;
+  final String size;
+  final String aspect;
+  final DateTime createdAt;
+  const StoryImageRow({
+    required this.id,
+    required this.seriesId,
+    this.beatId,
+    required this.kind,
+    required this.fileKey,
+    required this.prompt,
+    this.seed,
+    required this.model,
+    required this.size,
+    required this.aspect,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['series_id'] = Variable<String>(seriesId);
+    if (!nullToAbsent || beatId != null) {
+      map['beat_id'] = Variable<String>(beatId);
+    }
+    {
+      map['kind'] = Variable<int>($StoryImagesTable.$converterkind.toSql(kind));
+    }
+    map['file_key'] = Variable<String>(fileKey);
+    map['prompt'] = Variable<String>(prompt);
+    if (!nullToAbsent || seed != null) {
+      map['seed'] = Variable<int>(seed);
+    }
+    map['model'] = Variable<String>(model);
+    map['size'] = Variable<String>(size);
+    map['aspect'] = Variable<String>(aspect);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  StoryImagesCompanion toCompanion(bool nullToAbsent) {
+    return StoryImagesCompanion(
+      id: Value(id),
+      seriesId: Value(seriesId),
+      beatId: beatId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(beatId),
+      kind: Value(kind),
+      fileKey: Value(fileKey),
+      prompt: Value(prompt),
+      seed: seed == null && nullToAbsent ? const Value.absent() : Value(seed),
+      model: Value(model),
+      size: Value(size),
+      aspect: Value(aspect),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory StoryImageRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return StoryImageRow(
+      id: serializer.fromJson<String>(json['id']),
+      seriesId: serializer.fromJson<String>(json['seriesId']),
+      beatId: serializer.fromJson<String?>(json['beatId']),
+      kind: $StoryImagesTable.$converterkind.fromJson(
+        serializer.fromJson<int>(json['kind']),
+      ),
+      fileKey: serializer.fromJson<String>(json['fileKey']),
+      prompt: serializer.fromJson<String>(json['prompt']),
+      seed: serializer.fromJson<int?>(json['seed']),
+      model: serializer.fromJson<String>(json['model']),
+      size: serializer.fromJson<String>(json['size']),
+      aspect: serializer.fromJson<String>(json['aspect']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'seriesId': serializer.toJson<String>(seriesId),
+      'beatId': serializer.toJson<String?>(beatId),
+      'kind': serializer.toJson<int>(
+        $StoryImagesTable.$converterkind.toJson(kind),
+      ),
+      'fileKey': serializer.toJson<String>(fileKey),
+      'prompt': serializer.toJson<String>(prompt),
+      'seed': serializer.toJson<int?>(seed),
+      'model': serializer.toJson<String>(model),
+      'size': serializer.toJson<String>(size),
+      'aspect': serializer.toJson<String>(aspect),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  StoryImageRow copyWith({
+    String? id,
+    String? seriesId,
+    Value<String?> beatId = const Value.absent(),
+    StoryImageKind? kind,
+    String? fileKey,
+    String? prompt,
+    Value<int?> seed = const Value.absent(),
+    String? model,
+    String? size,
+    String? aspect,
+    DateTime? createdAt,
+  }) => StoryImageRow(
+    id: id ?? this.id,
+    seriesId: seriesId ?? this.seriesId,
+    beatId: beatId.present ? beatId.value : this.beatId,
+    kind: kind ?? this.kind,
+    fileKey: fileKey ?? this.fileKey,
+    prompt: prompt ?? this.prompt,
+    seed: seed.present ? seed.value : this.seed,
+    model: model ?? this.model,
+    size: size ?? this.size,
+    aspect: aspect ?? this.aspect,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  StoryImageRow copyWithCompanion(StoryImagesCompanion data) {
+    return StoryImageRow(
+      id: data.id.present ? data.id.value : this.id,
+      seriesId: data.seriesId.present ? data.seriesId.value : this.seriesId,
+      beatId: data.beatId.present ? data.beatId.value : this.beatId,
+      kind: data.kind.present ? data.kind.value : this.kind,
+      fileKey: data.fileKey.present ? data.fileKey.value : this.fileKey,
+      prompt: data.prompt.present ? data.prompt.value : this.prompt,
+      seed: data.seed.present ? data.seed.value : this.seed,
+      model: data.model.present ? data.model.value : this.model,
+      size: data.size.present ? data.size.value : this.size,
+      aspect: data.aspect.present ? data.aspect.value : this.aspect,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('StoryImageRow(')
+          ..write('id: $id, ')
+          ..write('seriesId: $seriesId, ')
+          ..write('beatId: $beatId, ')
+          ..write('kind: $kind, ')
+          ..write('fileKey: $fileKey, ')
+          ..write('prompt: $prompt, ')
+          ..write('seed: $seed, ')
+          ..write('model: $model, ')
+          ..write('size: $size, ')
+          ..write('aspect: $aspect, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    seriesId,
+    beatId,
+    kind,
+    fileKey,
+    prompt,
+    seed,
+    model,
+    size,
+    aspect,
+    createdAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is StoryImageRow &&
+          other.id == this.id &&
+          other.seriesId == this.seriesId &&
+          other.beatId == this.beatId &&
+          other.kind == this.kind &&
+          other.fileKey == this.fileKey &&
+          other.prompt == this.prompt &&
+          other.seed == this.seed &&
+          other.model == this.model &&
+          other.size == this.size &&
+          other.aspect == this.aspect &&
+          other.createdAt == this.createdAt);
+}
+
+class StoryImagesCompanion extends UpdateCompanion<StoryImageRow> {
+  final Value<String> id;
+  final Value<String> seriesId;
+  final Value<String?> beatId;
+  final Value<StoryImageKind> kind;
+  final Value<String> fileKey;
+  final Value<String> prompt;
+  final Value<int?> seed;
+  final Value<String> model;
+  final Value<String> size;
+  final Value<String> aspect;
+  final Value<DateTime> createdAt;
+  final Value<int> rowid;
+  const StoryImagesCompanion({
+    this.id = const Value.absent(),
+    this.seriesId = const Value.absent(),
+    this.beatId = const Value.absent(),
+    this.kind = const Value.absent(),
+    this.fileKey = const Value.absent(),
+    this.prompt = const Value.absent(),
+    this.seed = const Value.absent(),
+    this.model = const Value.absent(),
+    this.size = const Value.absent(),
+    this.aspect = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  StoryImagesCompanion.insert({
+    required String id,
+    required String seriesId,
+    this.beatId = const Value.absent(),
+    required StoryImageKind kind,
+    required String fileKey,
+    required String prompt,
+    this.seed = const Value.absent(),
+    this.model = const Value.absent(),
+    this.size = const Value.absent(),
+    this.aspect = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       seriesId = Value(seriesId),
+       kind = Value(kind),
+       fileKey = Value(fileKey),
+       prompt = Value(prompt);
+  static Insertable<StoryImageRow> custom({
+    Expression<String>? id,
+    Expression<String>? seriesId,
+    Expression<String>? beatId,
+    Expression<int>? kind,
+    Expression<String>? fileKey,
+    Expression<String>? prompt,
+    Expression<int>? seed,
+    Expression<String>? model,
+    Expression<String>? size,
+    Expression<String>? aspect,
+    Expression<DateTime>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (seriesId != null) 'series_id': seriesId,
+      if (beatId != null) 'beat_id': beatId,
+      if (kind != null) 'kind': kind,
+      if (fileKey != null) 'file_key': fileKey,
+      if (prompt != null) 'prompt': prompt,
+      if (seed != null) 'seed': seed,
+      if (model != null) 'model': model,
+      if (size != null) 'size': size,
+      if (aspect != null) 'aspect': aspect,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  StoryImagesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? seriesId,
+    Value<String?>? beatId,
+    Value<StoryImageKind>? kind,
+    Value<String>? fileKey,
+    Value<String>? prompt,
+    Value<int?>? seed,
+    Value<String>? model,
+    Value<String>? size,
+    Value<String>? aspect,
+    Value<DateTime>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return StoryImagesCompanion(
+      id: id ?? this.id,
+      seriesId: seriesId ?? this.seriesId,
+      beatId: beatId ?? this.beatId,
+      kind: kind ?? this.kind,
+      fileKey: fileKey ?? this.fileKey,
+      prompt: prompt ?? this.prompt,
+      seed: seed ?? this.seed,
+      model: model ?? this.model,
+      size: size ?? this.size,
+      aspect: aspect ?? this.aspect,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (seriesId.present) {
+      map['series_id'] = Variable<String>(seriesId.value);
+    }
+    if (beatId.present) {
+      map['beat_id'] = Variable<String>(beatId.value);
+    }
+    if (kind.present) {
+      map['kind'] = Variable<int>(
+        $StoryImagesTable.$converterkind.toSql(kind.value),
+      );
+    }
+    if (fileKey.present) {
+      map['file_key'] = Variable<String>(fileKey.value);
+    }
+    if (prompt.present) {
+      map['prompt'] = Variable<String>(prompt.value);
+    }
+    if (seed.present) {
+      map['seed'] = Variable<int>(seed.value);
+    }
+    if (model.present) {
+      map['model'] = Variable<String>(model.value);
+    }
+    if (size.present) {
+      map['size'] = Variable<String>(size.value);
+    }
+    if (aspect.present) {
+      map['aspect'] = Variable<String>(aspect.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('StoryImagesCompanion(')
+          ..write('id: $id, ')
+          ..write('seriesId: $seriesId, ')
+          ..write('beatId: $beatId, ')
+          ..write('kind: $kind, ')
+          ..write('fileKey: $fileKey, ')
+          ..write('prompt: $prompt, ')
+          ..write('seed: $seed, ')
+          ..write('model: $model, ')
+          ..write('size: $size, ')
+          ..write('aspect: $aspect, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -4956,6 +5600,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   );
   late final $SeriesTableTable seriesTable = $SeriesTableTable(this);
   late final $BeatsTable beats = $BeatsTable(this);
+  late final $StoryImagesTable storyImages = $StoryImagesTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -4969,6 +5614,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     storyCharacters,
     seriesTable,
     beats,
+    storyImages,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -5027,6 +5673,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('beats', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'series',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('story_images', kind: UpdateKind.delete)],
     ),
   ]);
 }
@@ -7849,6 +8502,24 @@ final class $$SeriesTableTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<$StoryImagesTable, List<StoryImageRow>>
+  _storyImagesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.storyImages,
+    aliasName: 'series__id__story_images__series_id',
+  );
+
+  $$StoryImagesTableProcessedTableManager get storyImagesRefs {
+    final manager = $$StoryImagesTableTableManager(
+      $_db,
+      $_db.storyImages,
+    ).filter((f) => f.seriesId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_storyImagesRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$SeriesTableTableFilterComposer
@@ -8026,6 +8697,31 @@ class $$SeriesTableTableFilterComposer
           }) => $$BeatsTableFilterComposer(
             $db: $db,
             $table: $db.beats,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> storyImagesRefs(
+    Expression<bool> Function($$StoryImagesTableFilterComposer f) f,
+  ) {
+    final $$StoryImagesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.storyImages,
+      getReferencedColumn: (t) => t.seriesId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StoryImagesTableFilterComposer(
+            $db: $db,
+            $table: $db.storyImages,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -8354,6 +9050,31 @@ class $$SeriesTableTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> storyImagesRefs<T extends Object>(
+    Expression<T> Function($$StoryImagesTableAnnotationComposer a) f,
+  ) {
+    final $$StoryImagesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.storyImages,
+      getReferencedColumn: (t) => t.seriesId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StoryImagesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.storyImages,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$SeriesTableTableTableManager
@@ -8369,7 +9090,12 @@ class $$SeriesTableTableTableManager
           $$SeriesTableTableUpdateCompanionBuilder,
           (SeriesRow, $$SeriesTableTableReferences),
           SeriesRow,
-          PrefetchHooks Function({bool childId, bool worldId, bool beatsRefs})
+          PrefetchHooks Function({
+            bool childId,
+            bool worldId,
+            bool beatsRefs,
+            bool storyImagesRefs,
+          })
         > {
   $$SeriesTableTableTableManager(_$AppDatabase db, $SeriesTableTable table)
     : super(
@@ -8491,10 +9217,18 @@ class $$SeriesTableTableTableManager
               )
               .toList(),
           prefetchHooksCallback:
-              ({childId = false, worldId = false, beatsRefs = false}) {
+              ({
+                childId = false,
+                worldId = false,
+                beatsRefs = false,
+                storyImagesRefs = false,
+              }) {
                 return PrefetchHooks(
                   db: db,
-                  explicitlyWatchedTables: [if (beatsRefs) db.beats],
+                  explicitlyWatchedTables: [
+                    if (beatsRefs) db.beats,
+                    if (storyImagesRefs) db.storyImages,
+                  ],
                   addJoins:
                       <
                         T extends TableManagerState<
@@ -8567,6 +9301,27 @@ class $$SeriesTableTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (storyImagesRefs)
+                        await $_getPrefetchedData<
+                          SeriesRow,
+                          $SeriesTableTable,
+                          StoryImageRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$SeriesTableTableReferences
+                              ._storyImagesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$SeriesTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).storyImagesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.seriesId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -8587,7 +9342,12 @@ typedef $$SeriesTableTableProcessedTableManager =
       $$SeriesTableTableUpdateCompanionBuilder,
       (SeriesRow, $$SeriesTableTableReferences),
       SeriesRow,
-      PrefetchHooks Function({bool childId, bool worldId, bool beatsRefs})
+      PrefetchHooks Function({
+        bool childId,
+        bool worldId,
+        bool beatsRefs,
+        bool storyImagesRefs,
+      })
     >;
 typedef $$BeatsTableCreateCompanionBuilder =
     BeatsCompanion Function({
@@ -9147,6 +9907,438 @@ typedef $$BeatsTableProcessedTableManager =
       BeatRow,
       PrefetchHooks Function({bool seriesId})
     >;
+typedef $$StoryImagesTableCreateCompanionBuilder =
+    StoryImagesCompanion Function({
+      required String id,
+      required String seriesId,
+      Value<String?> beatId,
+      required StoryImageKind kind,
+      required String fileKey,
+      required String prompt,
+      Value<int?> seed,
+      Value<String> model,
+      Value<String> size,
+      Value<String> aspect,
+      Value<DateTime> createdAt,
+      Value<int> rowid,
+    });
+typedef $$StoryImagesTableUpdateCompanionBuilder =
+    StoryImagesCompanion Function({
+      Value<String> id,
+      Value<String> seriesId,
+      Value<String?> beatId,
+      Value<StoryImageKind> kind,
+      Value<String> fileKey,
+      Value<String> prompt,
+      Value<int?> seed,
+      Value<String> model,
+      Value<String> size,
+      Value<String> aspect,
+      Value<DateTime> createdAt,
+      Value<int> rowid,
+    });
+
+final class $$StoryImagesTableReferences
+    extends BaseReferences<_$AppDatabase, $StoryImagesTable, StoryImageRow> {
+  $$StoryImagesTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $SeriesTableTable _seriesIdTable(_$AppDatabase db) =>
+      db.seriesTable.createAlias('story_images__series_id__series__id');
+
+  $$SeriesTableTableProcessedTableManager get seriesId {
+    final $_column = $_itemColumn<String>('series_id')!;
+
+    final manager = $$SeriesTableTableTableManager(
+      $_db,
+      $_db.seriesTable,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_seriesIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$StoryImagesTableFilterComposer
+    extends Composer<_$AppDatabase, $StoryImagesTable> {
+  $$StoryImagesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get beatId => $composableBuilder(
+    column: $table.beatId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<StoryImageKind, StoryImageKind, int>
+  get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnWithTypeConverterFilters(column),
+  );
+
+  ColumnFilters<String> get fileKey => $composableBuilder(
+    column: $table.fileKey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get prompt => $composableBuilder(
+    column: $table.prompt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get seed => $composableBuilder(
+    column: $table.seed,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get model => $composableBuilder(
+    column: $table.model,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get size => $composableBuilder(
+    column: $table.size,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get aspect => $composableBuilder(
+    column: $table.aspect,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$SeriesTableTableFilterComposer get seriesId {
+    final $$SeriesTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.seriesId,
+      referencedTable: $db.seriesTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SeriesTableTableFilterComposer(
+            $db: $db,
+            $table: $db.seriesTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$StoryImagesTableOrderingComposer
+    extends Composer<_$AppDatabase, $StoryImagesTable> {
+  $$StoryImagesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get beatId => $composableBuilder(
+    column: $table.beatId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get fileKey => $composableBuilder(
+    column: $table.fileKey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get prompt => $composableBuilder(
+    column: $table.prompt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get seed => $composableBuilder(
+    column: $table.seed,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get model => $composableBuilder(
+    column: $table.model,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get size => $composableBuilder(
+    column: $table.size,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get aspect => $composableBuilder(
+    column: $table.aspect,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$SeriesTableTableOrderingComposer get seriesId {
+    final $$SeriesTableTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.seriesId,
+      referencedTable: $db.seriesTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SeriesTableTableOrderingComposer(
+            $db: $db,
+            $table: $db.seriesTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$StoryImagesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $StoryImagesTable> {
+  $$StoryImagesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get beatId =>
+      $composableBuilder(column: $table.beatId, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<StoryImageKind, int> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => column);
+
+  GeneratedColumn<String> get fileKey =>
+      $composableBuilder(column: $table.fileKey, builder: (column) => column);
+
+  GeneratedColumn<String> get prompt =>
+      $composableBuilder(column: $table.prompt, builder: (column) => column);
+
+  GeneratedColumn<int> get seed =>
+      $composableBuilder(column: $table.seed, builder: (column) => column);
+
+  GeneratedColumn<String> get model =>
+      $composableBuilder(column: $table.model, builder: (column) => column);
+
+  GeneratedColumn<String> get size =>
+      $composableBuilder(column: $table.size, builder: (column) => column);
+
+  GeneratedColumn<String> get aspect =>
+      $composableBuilder(column: $table.aspect, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  $$SeriesTableTableAnnotationComposer get seriesId {
+    final $$SeriesTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.seriesId,
+      referencedTable: $db.seriesTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SeriesTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.seriesTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$StoryImagesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $StoryImagesTable,
+          StoryImageRow,
+          $$StoryImagesTableFilterComposer,
+          $$StoryImagesTableOrderingComposer,
+          $$StoryImagesTableAnnotationComposer,
+          $$StoryImagesTableCreateCompanionBuilder,
+          $$StoryImagesTableUpdateCompanionBuilder,
+          (StoryImageRow, $$StoryImagesTableReferences),
+          StoryImageRow,
+          PrefetchHooks Function({bool seriesId})
+        > {
+  $$StoryImagesTableTableManager(_$AppDatabase db, $StoryImagesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$StoryImagesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$StoryImagesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$StoryImagesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> seriesId = const Value.absent(),
+                Value<String?> beatId = const Value.absent(),
+                Value<StoryImageKind> kind = const Value.absent(),
+                Value<String> fileKey = const Value.absent(),
+                Value<String> prompt = const Value.absent(),
+                Value<int?> seed = const Value.absent(),
+                Value<String> model = const Value.absent(),
+                Value<String> size = const Value.absent(),
+                Value<String> aspect = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => StoryImagesCompanion(
+                id: id,
+                seriesId: seriesId,
+                beatId: beatId,
+                kind: kind,
+                fileKey: fileKey,
+                prompt: prompt,
+                seed: seed,
+                model: model,
+                size: size,
+                aspect: aspect,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String seriesId,
+                Value<String?> beatId = const Value.absent(),
+                required StoryImageKind kind,
+                required String fileKey,
+                required String prompt,
+                Value<int?> seed = const Value.absent(),
+                Value<String> model = const Value.absent(),
+                Value<String> size = const Value.absent(),
+                Value<String> aspect = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => StoryImagesCompanion.insert(
+                id: id,
+                seriesId: seriesId,
+                beatId: beatId,
+                kind: kind,
+                fileKey: fileKey,
+                prompt: prompt,
+                seed: seed,
+                model: model,
+                size: size,
+                aspect: aspect,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$StoryImagesTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({seriesId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (seriesId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.seriesId,
+                                referencedTable: $$StoryImagesTableReferences
+                                    ._seriesIdTable(db),
+                                referencedColumn: $$StoryImagesTableReferences
+                                    ._seriesIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$StoryImagesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $StoryImagesTable,
+      StoryImageRow,
+      $$StoryImagesTableFilterComposer,
+      $$StoryImagesTableOrderingComposer,
+      $$StoryImagesTableAnnotationComposer,
+      $$StoryImagesTableCreateCompanionBuilder,
+      $$StoryImagesTableUpdateCompanionBuilder,
+      (StoryImageRow, $$StoryImagesTableReferences),
+      StoryImageRow,
+      PrefetchHooks Function({bool seriesId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -9167,4 +10359,6 @@ class $AppDatabaseManager {
       $$SeriesTableTableTableManager(_db, _db.seriesTable);
   $$BeatsTableTableManager get beats =>
       $$BeatsTableTableManager(_db, _db.beats);
+  $$StoryImagesTableTableManager get storyImages =>
+      $$StoryImagesTableTableManager(_db, _db.storyImages);
 }

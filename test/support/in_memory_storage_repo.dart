@@ -6,6 +6,7 @@ import 'package:sleepytime/domain/models/learned_profile.dart';
 import 'package:sleepytime/domain/models/quiz_result.dart';
 import 'package:sleepytime/domain/models/series.dart';
 import 'package:sleepytime/domain/models/story_character.dart';
+import 'package:sleepytime/domain/models/story_image.dart';
 import 'package:sleepytime/domain/models/world.dart';
 
 /// A pure-Dart [StorageRepo] for tests — no Drift, no native sqlite, no
@@ -125,6 +126,27 @@ class InMemoryStorageRepo implements StorageRepo {
   Future<void> deleteBeat(String id) async {
     for (final list in _beats.values) {
       list.removeWhere((b) => b.id == id);
+    }
+  }
+
+  // ── Pictures ────────────────────────────────────────────────────
+  final Map<String, List<StoryImage>> _images = {};
+
+  @override
+  Future<List<StoryImage>> loadImages(String seriesId) async =>
+      List.unmodifiable(_images[seriesId] ?? const []);
+
+  @override
+  Future<void> saveImage(StoryImage image) async {
+    final list = _images.putIfAbsent(image.seriesId, () => []);
+    list.removeWhere((i) => i.id == image.id);
+    list.add(image);
+  }
+
+  @override
+  Future<void> deleteImage(String id) async {
+    for (final list in _images.values) {
+      list.removeWhere((i) => i.id == id);
     }
   }
 }

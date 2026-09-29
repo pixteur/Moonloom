@@ -17,7 +17,10 @@ import 'adapters/secrets/dpapi_secret_store.dart';
 import 'adapters/secrets/secret_store.dart';
 import 'adapters/storage/app_database.dart';
 import 'adapters/storage/drift_storage_repo.dart';
+import 'adapters/storage/library_paths.dart';
 import 'adapters/storage/storage_repo.dart';
+import 'adapters/images/picture_store.dart';
+import 'adapters/images/story_illustrator.dart';
 import 'adapters/tts/audio_cache.dart';
 import 'adapters/tts/cloud_tts_provider.dart';
 import 'adapters/tts/device_tts_provider.dart';
@@ -28,7 +31,9 @@ import 'adapters/tts/tts_provider.dart';
 import 'domain/character_service.dart';
 import 'domain/models/beat.dart';
 import 'domain/models/child_profile.dart';
+import 'domain/illustration_service.dart';
 import 'domain/models/series.dart';
+import 'domain/models/story_image.dart';
 import 'domain/models/story_character.dart';
 import 'domain/models/world.dart';
 import 'domain/profile_service.dart';
@@ -345,6 +350,26 @@ final savedNarrationProvider = Provider<SavedNarration>(
 /// On-disk cache of synthesized narration, so replays/re-opens are instant and
 /// gap-free and don't re-hit the cloud. Shared across voice-provider rebuilds.
 final audioCacheProvider = Provider<AudioCache>((ref) => FileAudioCache());
+
+/// Where story pictures live on disk.
+final pictureStoreProvider = Provider<PictureStore>(
+  (ref) => FilePictureStore(resolve: LibraryPaths.pictures),
+);
+
+/// Draws pictures for a story. Never called by a story turn — a picture costs
+/// more than the story it illustrates, so it happens when somebody asks.
+final illustrationServiceProvider = Provider<IllustrationService>(
+  (ref) => IllustrationService(
+    illustrator: GeminiIllustrator(secrets: ref.watch(secretStoreProvider)),
+    pictures: ref.watch(pictureStoreProvider),
+    repo: ref.watch(storageRepoProvider),
+  ),
+);
+
+/// The pictures a story has, newest last.
+final storyImagesProvider = FutureProvider.family<List<StoryImage>, String>(
+  (ref, seriesId) => ref.watch(storageRepoProvider).loadImages(seriesId),
+);
 
 /// The voice to read in, once the world has had its say.
 ///

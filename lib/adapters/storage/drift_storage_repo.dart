@@ -11,6 +11,7 @@ import '../../domain/models/narration.dart';
 import '../../domain/models/quiz_result.dart';
 import '../../domain/models/series.dart';
 import '../../domain/models/story_character.dart';
+import '../../domain/models/story_image.dart';
 import '../../domain/models/world.dart';
 import 'app_database.dart';
 import 'storage_repo.dart';
@@ -427,6 +428,56 @@ class DriftStorageRepo implements StorageRepo {
   Future<void> deleteBeat(String id) async {
     await (_db.delete(_db.beats)..where((t) => t.id.equals(id))).go();
   }
+
+  // ── Pictures ────────────────────────────────────────────────────
+  @override
+  Future<List<StoryImage>> loadImages(String seriesId) async {
+    final rows =
+        await (_db.select(_db.storyImages)
+              ..where((t) => t.seriesId.equals(seriesId))
+              ..orderBy([(t) => OrderingTerm(expression: t.createdAt)]))
+            .get();
+    return rows.map(_toImage).toList();
+  }
+
+  @override
+  Future<void> saveImage(StoryImage image) async {
+    await _db
+        .into(_db.storyImages)
+        .insertOnConflictUpdate(
+          StoryImagesCompanion.insert(
+            id: image.id,
+            seriesId: image.seriesId,
+            beatId: Value(image.beatId),
+            kind: image.kind,
+            fileKey: image.fileKey,
+            prompt: image.prompt,
+            seed: Value(image.seed),
+            model: Value(image.model),
+            size: Value(image.size),
+            aspect: Value(image.aspect),
+          ),
+        );
+  }
+
+  @override
+  Future<void> deleteImage(String id) async {
+    await (_db.delete(_db.storyImages)..where((t) => t.id.equals(id))).go();
+  }
+
+  StoryImage _toImage(StoryImageRow r) => StoryImage(
+    id: r.id,
+    seriesId: r.seriesId,
+    beatId: r.beatId,
+    kind: r.kind,
+    fileKey: r.fileKey,
+    prompt: r.prompt,
+    seed: r.seed,
+    model: r.model,
+    size: r.size,
+    aspect: r.aspect,
+    createdAt: r.createdAt,
+  );
 
   Beat _toBeat(BeatRow r) => Beat(
     id: r.id,

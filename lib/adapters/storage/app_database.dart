@@ -10,6 +10,7 @@ import '../../domain/models/child_profile.dart';
 import '../../domain/models/interest.dart';
 import '../../domain/models/quiz_result.dart';
 import '../../domain/models/series.dart';
+import '../../domain/models/story_image.dart';
 
 part 'app_database.g.dart';
 
@@ -204,6 +205,33 @@ class _StringMapConverter extends TypeConverter<Map<String, String>, String> {
   String toSql(Map<String, String> value) => jsonEncode(value);
 }
 
+/// Pictures belonging to a story. The bytes live on disk under [fileKey], the
+/// same way narration does — a database is the wrong place for megabytes.
+///
+/// [prompt] and [seed] are provenance, not a recipe: the model does not
+/// reproduce an image from them. See `domain/models/story_image.dart`.
+@DataClassName('StoryImageRow')
+class StoryImages extends Table {
+  TextColumn get id => text()();
+  TextColumn get seriesId =>
+      text().references(SeriesTable, #id, onDelete: KeyAction.cascade)();
+
+  /// Null for a cover, which belongs to the story rather than a chapter.
+  TextColumn get beatId => text().nullable()();
+
+  IntColumn get kind => intEnum<StoryImageKind>()();
+  TextColumn get fileKey => text()();
+  TextColumn get prompt => text()();
+  IntColumn get seed => integer().nullable()();
+  TextColumn get model => text().withDefault(const Constant(''))();
+  TextColumn get size => text().withDefault(const Constant('2K'))();
+  TextColumn get aspect => text().withDefault(const Constant('4:3'))();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
 class _StringListConverter extends TypeConverter<List<String>, String> {
   const _StringListConverter();
 
@@ -227,6 +255,7 @@ class _StringListConverter extends TypeConverter<List<String>, String> {
     StoryCharacters,
     SeriesTable,
     Beats,
+    StoryImages,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -236,7 +265,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 10;
+  int get schemaVersion => 11;
 
   /// The library's file name, under the user's documents folder.
   static const String fileName = 'sleepytime.sqlite';
@@ -339,6 +368,14 @@ class AppDatabase extends _$AppDatabase {
           () => m.addColumn(worlds, worlds.voiceName),
         );
       }
+      // v10 → v11: pictures. A whole table rather than a column, so the guard
+      // is "does the table exist" rather than "does the column".
+      if (from < 11) {
+        await _createTableIfMissing(
+          'story_images',
+          () => m.createTable(storyImages),
+        );
+      }
     },
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON');
@@ -376,6 +413,11 @@ class AppDatabase extends _$AppDatabase {
         'TEXT',
       );
       await _ensureColumn('worlds', 'voice_name', "TEXT NOT NULL DEFAULT ''");
+      // Same reconciliation for the whole table, for the same reason.
+      await _createTableIfMissing(
+        'story_images',
+        () => createMigrator().createTable(storyImages),
+      );
     },
   );
 
@@ -395,6 +437,21 @@ class AppDatabase extends _$AppDatabase {
   /// and still reports the older version, so a plain `addColumn` would fail
   /// with "duplicate column name". Checking first makes the step safe to run
   /// against a database in either state.
+  /// The same guard as [_addColumnIfMissing], for a whole table. Branches
+  /// share one database file, so a version can be stamped without the step
+  /// that number implies ever running — and a missing table surfaces as
+  /// "no such table" on the first read, far from here.
+  Future<void> _createTableIfMissing(
+    String table,
+    Future<void> Function() create,
+  ) async {
+    final found = await customSelect(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name = ?",
+      variables: [Variable<String>(table)],
+    ).get();
+    if (found.isEmpty) await create();
+  }
+
   Future<void> _addColumnIfMissing(
     String table,
     String column,

@@ -8,10 +8,12 @@ import '../../adapters/lunii/lunii_transfer.dart';
 import '../../app_providers.dart';
 import '../../domain/models/beat.dart';
 import '../../domain/models/series.dart';
+import '../../domain/models/story_image.dart';
 import '../common/hold_to_delete.dart';
 import '../common/language_choices.dart';
 import '../series/story_language_sheet.dart';
 import '../common/error_banner.dart';
+import 'story_picture.dart';
 import 'story_view_screen.dart';
 
 /// A single story's chapter list: start from the beginning or jump to any
@@ -690,8 +692,21 @@ class _StoryChaptersScreenState extends ConsumerState<StoryChaptersScreen> {
                 ? const _Writing()
                 : ListView.builder(
                     padding: const EdgeInsets.fromLTRB(8, 8, 8, 24),
-                    itemCount: beats.length,
-                    itemBuilder: (_, i) {
+                    // The cover sits above the chapters, with the story name
+                    // set over it in real text rather than drawn in.
+                    itemCount: beats.length + 1,
+                    itemBuilder: (_, index) {
+                      if (index == 0) {
+                        return Padding(
+                          padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+                          child: StoryPicture(
+                            seriesId: series.id,
+                            kind: StoryImageKind.cover,
+                            title: series.title,
+                          ),
+                        );
+                      }
+                      final i = index - 1;
                       final b = beats[i];
                       // ListTile has no right-click of its own, so the card
                       // carries it. Same gesture as every other card.
