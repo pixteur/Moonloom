@@ -11,6 +11,8 @@ import 'models/cast_changes.dart';
 import 'models/child_profile.dart';
 import 'models/learned_profile.dart';
 import 'models/series.dart';
+import 'models/story_character.dart';
+import 'cast_line.dart';
 import 'models/story_request.dart';
 import 'models/story_segment.dart';
 import 'prompt_builder.dart';
@@ -305,7 +307,56 @@ class StoryEngine {
         world.copyWith(pendingCastChanges: CastChanges.none),
       );
     }
+    // Whoever this chapter introduced now lives here.
+    if (world != null && lastFallbackReason == null) {
+      await _rememberCast(world.id, safe.characters);
+    }
     return beat;
+  }
+
+  /// The most characters a world will carry into a prompt.
+  ///
+  /// A long list stops steering and starts crowding: past a dozen it is no
+  /// longer "these people exist", it is a wall of text the model skims. The
+  /// cap keeps the constraint sharp, and a world with more than twelve named
+  /// people has outgrown what a bedtime series needs anyway.
+  static const int _maxCast = 12;
+
+  /// Put this chapter's people into the world's cast, so the next story
+  /// inherits them instead of inventing them again.
+  ///
+  /// This is the fix for the thing that made a world stop being a place. Every
+  /// chapter has always recorded who was in it, and nothing ever promoted
+  /// them, so each new episode started with an empty cast list. Across one
+  /// child's library Pip came out a dragon, a star, a fish, a child, an otter,
+  /// a kitten and a fox — seven creatures with one name, because nobody ever
+  /// told the second story who the first one had met.
+  ///
+  /// Deliberately additive and never destructive. An existing character is
+  /// left exactly as saved, because what is written down is the authority: a
+  /// grown-up may have corrected it in "Edit world", and a later chapter that
+  /// drifted must not be allowed to overwrite the correction.
+  Future<void> _rememberCast(String worldId, List<String> characters) async {
+    if (characters.isEmpty) return;
+    final known = await _repo.loadCharacters(worldId);
+    if (known.length >= _maxCast) return;
+    final seen = {for (final c in known) c.name.toLowerCase()};
+    var room = _maxCast - known.length;
+
+    for (final entry in characters) {
+      if (room <= 0) break;
+      final (name, description) = parseCastEntry(entry);
+      if (name.isEmpty || !seen.add(name.toLowerCase())) continue;
+      await _repo.saveCharacter(
+        StoryCharacter(
+          id: _uuid.v4(),
+          worldId: worldId,
+          name: name,
+          description: description,
+        ),
+      );
+      room--;
+    }
   }
 
   /// Hand the draft back to the model as an editor and take the result only if

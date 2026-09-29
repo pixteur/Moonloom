@@ -144,10 +144,31 @@ class PromptBuilder {
       );
     }
     if (req.cast.isNotEmpty) {
-      user.writeln('Recurring characters (keep them recognisable):');
+      // A HARD CONSTRAINT, not a reminder.
+      //
+      // "Keep them recognisable" was the old wording, and across one child's
+      // library Pip came out a dragon, a star, a fish, a child, an otter, a
+      // kitten and a fox. Some of that was an empty cast list — nothing was
+      // promoting characters into the world — but the wording invited it too:
+      // a model told to keep somebody recognisable will happily decide they
+      // are recognisably a penguin this time.
+      //
+      // These are facts about people who already exist, and the one thing a
+      // child notices instantly is a friend turning into a different animal.
+      user.writeln(
+        'These characters ALREADY EXIST in this world. Their names, species, '
+        'appearance and pronouns are fixed facts and must not change — not '
+        'for this story, not for any reason. Do not reimagine them, do not '
+        'give them a new form, and do not introduce a different character '
+        'with the same name:',
+      );
       for (final c in req.cast) {
         user.writeln('- $c');
       }
+      user.writeln(
+        'New characters are welcome, but they must have new names and must '
+        'not replace anyone above.',
+      );
     }
 
     _writeCastChanges(user, req);

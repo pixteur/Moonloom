@@ -181,8 +181,17 @@ void main() {
     );
     expect(p.user, contains('new episode in an ongoing world'));
     expect(p.user, contains('Splat the Cat'));
-    expect(p.user, contains('Recurring characters'));
+    // Stated as fixed facts, not as a reminder. "Keep them recognisable" was
+    // the old wording, and Pip came out seven different creatures across one
+    // child's library.
+    expect(p.user, contains('ALREADY EXIST'));
+    expect(p.user, contains('must not change'));
     expect(p.user, contains('big black cat'));
+    expect(
+      p.user,
+      contains('new names'),
+      reason: 'a new character must not take an existing name',
+    );
   });
 
   test('up to three themes are blended, leading with the first', () {

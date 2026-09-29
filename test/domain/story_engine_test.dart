@@ -6,6 +6,7 @@ import 'package:moonloom/domain/models/cast_changes.dart';
 import 'package:moonloom/domain/models/child_profile.dart';
 import 'package:moonloom/domain/models/series.dart';
 import 'package:moonloom/domain/models/story_segment.dart';
+import 'package:moonloom/domain/models/story_character.dart';
 import 'package:moonloom/domain/models/world.dart';
 import 'package:moonloom/domain/prompt_builder.dart';
 import 'package:moonloom/domain/story_engine.dart';
@@ -843,4 +844,160 @@ void main() {
       expect(saved!.pendingCastChanges.left, ['Splat — a big black cat']);
     });
   });
+
+  group('a world remembers who lives in it', () {
+    // Pip came out a dragon, a star, a fish, a child, an otter, a kitten and
+    // a fox across one child's library. Every chapter had recorded who was in
+    // it; nothing ever promoted them, so each new episode started with an
+    // empty cast list and invented Pip again.
+    const world = World(id: 'w1', childId: 'c1', name: "Pip's Adventures");
+
+    Series episodeOf(String id) => Series(
+      id: id,
+      childId: 'c1',
+      title: 'Episode $id',
+      theme: StoryTheme.cozy,
+      worldId: 'w1',
+      seedSummary: 'A gentle sea adventure.',
+    );
+
+    test('a chapter puts its characters into the world', () async {
+      await repo.saveWorld(world);
+      final episode = episodeOf('e1');
+      await repo.saveSeries(episode);
+
+      await StoryEngine(
+        ai: _CastProvider(const ['Pip, an axolotl', 'Coral — a sea turtle']),
+        repo: repo,
+      ).takeTurn(child: child, series: episode, intent: StoryIntent.dice);
+
+      final cast = await repo.loadCharacters('w1');
+      expect(cast.map((c) => c.name), containsAll(['Pip', 'Coral']));
+      expect(
+        cast.firstWhere((c) => c.name == 'Pip').description,
+        'an axolotl',
+        reason: 'the species is the whole point',
+      );
+      expect(
+        cast.firstWhere((c) => c.name == 'Coral').description,
+        'a sea turtle',
+        reason: 'an em dash separates just as well as a comma',
+      );
+    });
+
+    test('the next story is told who they are', () async {
+      await repo.saveWorld(world);
+      final first = episodeOf('e1');
+      await repo.saveSeries(first);
+      await StoryEngine(
+        ai: _CastProvider(const ['Pip, an axolotl']),
+        repo: repo,
+      ).takeTurn(child: child, series: first, intent: StoryIntent.dice);
+
+      final second = episodeOf('e2');
+      await repo.saveSeries(second);
+      final ai = _RecordingProvider();
+      await StoryEngine(
+        ai: ai,
+        repo: repo,
+      ).takeTurn(child: child, series: second, intent: StoryIntent.dice);
+
+      // Stored as a promptLine, which normalises the separator to an em dash.
+      expect(ai.prompt!.user, contains('Pip'));
+      expect(ai.prompt!.user, contains('an axolotl'));
+      expect(ai.prompt!.user, contains('ALREADY EXIST'));
+      expect(ai.prompt!.user, contains('must not change'));
+    });
+
+    test('an existing character is never overwritten', () async {
+      // A grown-up may have corrected the description in "Edit world", and a
+      // later chapter that drifted must not undo the correction.
+      await repo.saveWorld(world);
+      await repo.saveCharacter(
+        const StoryCharacter(
+          id: 'ch1',
+          worldId: 'w1',
+          name: 'Pip',
+          description: 'a small red fox',
+        ),
+      );
+      final episode = episodeOf('e1');
+      await repo.saveSeries(episode);
+
+      await StoryEngine(
+        ai: _CastProvider(const ['Pip, a penguin']),
+        repo: repo,
+      ).takeTurn(child: child, series: episode, intent: StoryIntent.dice);
+
+      final pip = (await repo.loadCharacters(
+        'w1',
+      )).where((c) => c.name == 'Pip');
+      expect(pip, hasLength(1), reason: 'not a second Pip either');
+      expect(pip.single.description, 'a small red fox');
+    });
+
+    test('a story with no world saves nobody', () async {
+      await StoryEngine(
+        ai: _CastProvider(const ['Pip, an axolotl']),
+        repo: repo,
+      ).takeTurn(child: child, series: series, intent: StoryIntent.dice);
+      expect(await repo.loadCharacters('w1'), isEmpty);
+    });
+
+    test('a fallback chapter does not teach the world anything', () async {
+      // A generic chapter written because the provider failed is not evidence
+      // about who lives here, and letting it name the cast would lock in
+      // whoever the placeholder happened to mention.
+      await repo.saveWorld(world);
+      final episode = episodeOf('e1');
+      await repo.saveSeries(episode);
+      await StoryEngine(
+        ai: _FailingProvider(),
+        repo: repo,
+      ).takeTurn(child: child, series: episode, intent: StoryIntent.dice);
+      expect(await repo.loadCharacters('w1'), isEmpty);
+    });
+
+    test('the cast stops growing before it stops steering', () async {
+      await repo.saveWorld(world);
+      final episode = episodeOf('e1');
+      await repo.saveSeries(episode);
+      await StoryEngine(
+        ai: _CastProvider([
+          for (var i = 0; i < 30; i++) 'Friend$i, a creature',
+        ]),
+        repo: repo,
+      ).takeTurn(child: child, series: episode, intent: StoryIntent.dice);
+      expect((await repo.loadCharacters('w1')).length, lessThanOrEqualTo(12));
+    });
+  });
+}
+
+/// Returns a chapter whose cast list is whatever the test asked for.
+class _CastProvider implements AiProvider {
+  _CastProvider(this.cast);
+  final List<String> cast;
+
+  @override
+  ProviderId get id => ProviderId.fake;
+  @override
+  Future<bool> isReady() async => true;
+  @override
+  Future<StorySegment> generate(StoryPrompt prompt) async => StorySegment(
+    storyText: 'They swam together through the warm shallows.',
+    summary: 'A swim in the shallows.',
+    rating: AgeRating.tiny,
+    characters: cast,
+  );
+}
+
+/// Always fails, so the engine falls back to a generic chapter.
+class _FailingProvider implements AiProvider {
+  @override
+  ProviderId get id => ProviderId.fake;
+  @override
+  Future<bool> isReady() async => true;
+  @override
+  Future<StorySegment> generate(StoryPrompt prompt) async =>
+      throw StateError('no');
 }
