@@ -11,7 +11,7 @@ import 'tts_provider.dart';
 import 'tts_synthesizer.dart';
 import 'voice_catalog.dart';
 
-/// Gemini TTS (`gemini-3.8-flash-tts`, `responseModalities: [AUDIO]`).
+/// Gemini TTS (`gemini-3.8-flash-lite-tts`, `responseModalities: [AUDIO]`).
 /// Returns raw 16-bit PCM which we wrap in a WAV container. Reuses the parent's
 /// Gemini key. See `docs/voice-tts.md`.
 class GeminiTtsSynthesizer implements TtsSynthesizer {
@@ -24,7 +24,7 @@ class GeminiTtsSynthesizer implements TtsSynthesizer {
        _http = httpClient ?? http.Client();
 
   /// Used when the grown-up hasn't chosen one in Voice setup.
-  static const String defaultModel = 'gemini-3.8-flash-tts';
+  static const String defaultModel = 'gemini-3.8-flash-lite-tts';
 
   static const String keyName = 'gemini';
   static const String _base =
@@ -54,11 +54,31 @@ class GeminiTtsSynthesizer implements TtsSynthesizer {
     String standingDirection = '',
   }) async {
     final key = await _secrets.readKey(keyName);
-    // Gemini's TTS takes its style as plain language ahead of the text. The
-    // direction is a separate sentence before a colon, never mixed into the
-    // story, so none of it can be spoken as part of the chapter.
-    final direction = narrationDirection(standingDirection, cue);
-    final prompt = direction.isEmpty ? text : '$direction\n\n$text';
+    // Only the prose. Gemini TTS does not take direction — it RECITES it.
+    //
+    // This adapter used to send "Read this warmly and unhurriedly… For this
+    // passage: slow, hushed, wistful" ahead of the chapter, on the assumption
+    // the model would treat it as instruction. It does not. Transcribing the
+    // output (`tool/direction_transcribe.dart`) shows the words coming out of
+    // the speaker, in front of the story, every time:
+    //
+    //   heard: "Read this warmly and unhurriedly, as a bedtime story for a
+    //   child of six. For this passage, slow, hushed, wistful. Crystal knelt
+    //   in the moss…"
+    //
+    // Every shape leaks, including the imperative form Google's own examples
+    // use ("Say cheerfully: …"), and every TTS model leaks — 3.8 flash,
+    // 3.8 flash-lite and 2.5 all recite some or all of it. There is no style
+    // field on `speechConfig` for a prebuilt voice and `system_instruction` is
+    // refused ("Developer instruction is not enabled for this model"), so
+    // there is nowhere for direction to go.
+    //
+    // Which makes removing it a strict improvement rather than a loss: the
+    // direction was never being obeyed, only read out. The cue still reaches
+    // the engines that have somewhere to put it — OpenAI's `instructions`
+    // field, ElevenLabs' audio tags — and still keys the cache, so a chapter
+    // re-directed still re-records. This is the trap in CLAUDE.md, found
+    // inside the app's own adapter: anything a voice is handed, it speaks.
     if (key == null || key.isEmpty) {
       throw const ProviderNotConfigured('No Gemini API key configured.');
     }
@@ -69,7 +89,7 @@ class GeminiTtsSynthesizer implements TtsSynthesizer {
         'contents': [
           {
             'parts': [
-              {'text': prompt},
+              {'text': text},
             ],
           },
         ],
