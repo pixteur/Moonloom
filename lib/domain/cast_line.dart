@@ -84,7 +84,17 @@ bool sameCharacter(String a, String b) =>
     parseCastEntry(a).$1.toLowerCase() == parseCastEntry(b).$1.toLowerCase();
 
 String _tidyName(String raw) {
-  final name = raw.trim().replaceAll(RegExp(r'''^["'“]+|["'”]+$'''), '').trim();
+  final name = raw
+      // Control characters, which a model occasionally emits and which survive
+      // all the way into the database. One world held both "Barnabé" and
+      // "Barnab\u0000" — two different characters as far as any comparison
+      // goes, and the second impossible to name at a prompt in order to
+      // delete it. Stripped here so a name is always something a person could
+      // type.
+      .replaceAll(RegExp(r'[\u0000-\u001f\u007f]'), '')
+      .trim()
+      .replaceAll(RegExp(r'''^["'“]+|["'”]+$'''), '')
+      .trim();
   if (name.isEmpty || name.length > _maxNameLength) return '';
   // A "name" holding a sentence's worth of words is a description that lost
   // its separator, not a name.

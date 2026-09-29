@@ -85,6 +85,13 @@ void main() {
   });
 
   group('tidying', () {
+    test('a control character never reaches a name', () {
+      // A model emitted one, it reached the database, and the world then held
+      // two Barnabés that no comparison could match and no prompt could name.
+      expect(parseCastEntry('Barnab\u0000, a dragon').$1, 'Barnab');
+      expect(parseCastEntry('Pip\u0007').$1, 'Pip');
+    });
+
     test('quotes around a name are dropped', () {
       expect(parseCastEntry('"Pip", an axolotl'), ('Pip', 'an axolotl'));
     });

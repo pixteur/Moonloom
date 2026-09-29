@@ -11,7 +11,9 @@ import 'dart:io';
 
 import 'package:moonloom/adapters/storage/app_database.dart';
 import 'package:moonloom/adapters/storage/drift_storage_repo.dart';
+import 'package:moonloom/domain/cast_line.dart';
 import 'package:moonloom/domain/models/story_character.dart';
+import 'package:moonloom/domain/models/world.dart';
 import 'package:uuid/uuid.dart';
 
 String? _opt(List<String> a, String n) {
@@ -36,11 +38,23 @@ Future<void> main(List<String> args) async {
     (c) => c.displayName.toLowerCase() == childName.toLowerCase(),
   );
   final worlds = await repo.loadWorlds(child.id);
+  // Matched loosely and reported clearly. An exact match threw "No element"
+  // on "Mystical Creature" because the world is called "Mystical Creature
+  // World", which is a stack trace where a sentence would do.
   final world = worldName == null
       ? worlds.first
-      : worlds.firstWhere(
-          (w) => w.name.toLowerCase() == worldName.toLowerCase(),
+      : worlds.cast<World?>().firstWhere(
+          (w) => w!.name.toLowerCase().contains(worldName.toLowerCase()),
+          orElse: () => null,
         );
+  if (world == null) {
+    stdout.writeln(
+      'No world of ${child.displayName}\'s matching "$worldName". '
+      'They have: ${worlds.map((w) => w.name).join(', ')}.',
+    );
+    await db.close();
+    return;
+  }
 
   if (name == null) {
     final cast = await repo.loadCharacters(world.id);
@@ -52,6 +66,57 @@ Future<void> main(List<String> args) async {
       );
     }
     if (cast.isEmpty) stdout.writeln('  (none)');
+    await db.close();
+    return;
+  }
+
+  // Removing somebody. Backfilling a world from drift-era stories imports
+  // three spellings of one character and a few things that were never
+  // characters at all — "leopard shark pup" as a name, somebody "referred to
+  // but not present". A crowded cast list stops steering, so pruning it is
+  // part of setting it.
+  if (args.contains('--remove')) {
+    // Compared on the sanitised name, so a row whose name carries a control
+    // character — which no prompt can type — is still reachable.
+    final wanted = parseCastEntry(name).$1.toLowerCase();
+    final gone = (await repo.loadCharacters(
+      world.id,
+    )).where((c) => parseCastEntry(c.name).$1.toLowerCase() == wanted).toList();
+    for (final c in gone) {
+      await repo.deleteCharacter(c.id);
+    }
+    stdout.writeln(
+      gone.isEmpty
+          ? 'No $name in ${world.name}.'
+          : 'Removed $name from ${world.name}.',
+    );
+    await db.close();
+    return;
+  }
+
+  // Correcting somebody who is already here keeps their id, so nothing that
+  // refers to them breaks — and drops their reference sheet, because a sheet
+  // drawn from the old description is now a picture of the wrong animal.
+  final existing = (await repo.loadCharacters(
+    world.id,
+  )).where((c) => c.name.toLowerCase() == name.toLowerCase()).firstOrNull;
+
+  if (existing != null) {
+    await repo.saveCharacter(
+      StoryCharacter(
+        id: existing.id,
+        worldId: world.id,
+        name: name,
+        description: description,
+      ),
+    );
+    stdout.writeln(
+      'Corrected $name in ${world.name}:\n'
+      '  was: ${existing.description.isEmpty ? '(nothing)' : existing.description}\n'
+      '  now: $description'
+      '${existing.sheetFileKey.isEmpty ? '' : '\n  reference sheet dropped — '
+                'it was drawn from the old description'}',
+    );
     await db.close();
     return;
   }
