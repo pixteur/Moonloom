@@ -9,9 +9,9 @@ library;
 
 import 'dart:io';
 
-import 'package:sleepytime/adapters/storage/app_database.dart';
-import 'package:sleepytime/adapters/storage/drift_storage_repo.dart';
-import 'package:sleepytime/domain/models/story_character.dart';
+import 'package:moonloom/adapters/storage/app_database.dart';
+import 'package:moonloom/adapters/storage/drift_storage_repo.dart';
+import 'package:moonloom/domain/models/story_character.dart';
 import 'package:uuid/uuid.dart';
 
 String? _opt(List<String> a, String n) {

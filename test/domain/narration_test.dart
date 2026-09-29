@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sleepytime/domain/models/narration.dart';
+import 'package:moonloom/domain/models/narration.dart';
 
 void main() {
   group('NarrationCue', () {

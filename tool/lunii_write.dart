@@ -26,25 +26,25 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:sleepytime/adapters/audio/mp3_encoder.dart';
-import 'package:sleepytime/adapters/audio/wav.dart';
-import 'package:sleepytime/adapters/export/cover_image.dart';
-import 'package:sleepytime/adapters/export/world_cover.dart';
-import 'package:sleepytime/adapters/image/bmp_rle4.dart';
-import 'package:sleepytime/adapters/lunii/device_pack.dart';
-import 'package:sleepytime/adapters/lunii/device_writer.dart';
-import 'package:sleepytime/adapters/tts/audio_compression.dart';
-import 'package:sleepytime/adapters/tts/narrated_chunks.dart';
-import 'package:sleepytime/domain/models/beat.dart';
-import 'package:sleepytime/domain/models/narration.dart';
-import 'package:sleepytime/domain/spoken_labels.dart';
+import 'package:moonloom/adapters/audio/mp3_encoder.dart';
+import 'package:moonloom/adapters/audio/wav.dart';
+import 'package:moonloom/adapters/export/cover_image.dart';
+import 'package:moonloom/adapters/export/world_cover.dart';
+import 'package:moonloom/adapters/image/bmp_rle4.dart';
+import 'package:moonloom/adapters/lunii/device_pack.dart';
+import 'package:moonloom/adapters/lunii/device_writer.dart';
+import 'package:moonloom/adapters/tts/audio_compression.dart';
+import 'package:moonloom/adapters/tts/narrated_chunks.dart';
+import 'package:moonloom/domain/models/beat.dart';
+import 'package:moonloom/domain/models/narration.dart';
+import 'package:moonloom/domain/spoken_labels.dart';
 import 'package:sqlite3/sqlite3.dart';
 
 void main(List<String> args) {
   final drive = _option(args, '--drive') ?? 'F:';
   final live = args.contains('--write');
   final home = Platform.environment['USERPROFILE'];
-  final backupDir = '$home\\Documents\\Sleepytime\\device-backup';
+  final backupDir = '$home\\Documents\\Moonloom\\device-backup';
 
   final device = LuniiDevice.open(drive);
   stdout.writeln(
@@ -90,10 +90,10 @@ void main(List<String> args) {
   final voice =
       _option(args, '--voice') ?? 'gemini/gemini-2.5-flash-preview-tts/Aoede';
   final language = _option(args, '--language') ?? 'en';
-  final audioDir = '$home\\Documents\\Sleepytime\\audio';
+  final audioDir = '$home\\Documents\\Moonloom\\audio';
 
   final db = sqlite3.open(
-    '$home\\Documents\\sleepytime.sqlite',
+    '$home\\Documents\\moonloom.sqlite',
     mode: OpenMode.readOnly,
   );
   final series = db.select('select * from series where id = ?', [seriesId]);

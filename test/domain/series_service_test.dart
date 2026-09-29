@@ -1,9 +1,9 @@
 import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sleepytime/domain/models/series.dart';
-import 'package:sleepytime/domain/series_service.dart';
-import 'package:sleepytime/domain/twist_deck.dart';
+import 'package:moonloom/domain/models/series.dart';
+import 'package:moonloom/domain/series_service.dart';
+import 'package:moonloom/domain/twist_deck.dart';
 
 import '../support/in_memory_storage_repo.dart';
 

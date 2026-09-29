@@ -65,6 +65,7 @@ class DriftStorageRepo implements StorageRepo {
             language: Value(profile.language),
             themeColor: Value(profile.themeColor),
             parentBrief: Value(profile.parentBrief),
+            photoKey: Value(profile.photoKey),
             updatedAt: Value(DateTime.now()),
           ),
         );
@@ -83,6 +84,7 @@ class DriftStorageRepo implements StorageRepo {
     detailLevel: r.detailLevel,
     themeColor: r.themeColor,
     parentBrief: r.parentBrief,
+    photoKey: r.photoKey,
   );
 
   // ── Quiz results ────────────────────────────────────────────────

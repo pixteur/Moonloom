@@ -10,7 +10,7 @@ import 'package:sqlite3/sqlite3.dart';
 void main(List<String> args) {
   final title = args.isNotEmpty ? args.first : 'Obsidian Stone Refined';
   final db = sqlite3.open(
-    '${Platform.environment['USERPROFILE']}\\Documents\\sleepytime.sqlite',
+    '${Platform.environment['USERPROFILE']}\\Documents\\moonloom.sqlite',
     mode: OpenMode.readOnly,
   );
   final s = db.select('select id from series where title = ?', [title]);

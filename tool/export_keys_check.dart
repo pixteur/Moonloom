@@ -13,8 +13,8 @@ library;
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:sleepytime/adapters/tts/narrated_chunks.dart';
-import 'package:sleepytime/domain/models/narration.dart';
+import 'package:moonloom/adapters/tts/narrated_chunks.dart';
+import 'package:moonloom/domain/models/narration.dart';
 import 'package:sqlite3/sqlite3.dart';
 
 void main(List<String> args) {
@@ -24,10 +24,10 @@ void main(List<String> args) {
       : 'gemini/gemini-2.5-flash-preview-tts/Aoede';
   final lang = args.length > 2 ? args[2] : 'en';
   final home = Platform.environment['USERPROFILE'];
-  final audioDir = Directory('$home\\Documents\\Sleepytime\\audio');
+  final audioDir = Directory('$home\\Documents\\Moonloom\\audio');
 
   final db = sqlite3.open(
-    '$home\\Documents\\sleepytime.sqlite',
+    '$home\\Documents\\moonloom.sqlite',
     mode: OpenMode.readOnly,
   );
   stdout.writeln('voice: $voiceSig   lang: $lang');

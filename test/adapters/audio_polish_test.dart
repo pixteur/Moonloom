@@ -2,7 +2,7 @@ import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sleepytime/adapters/tts/audio_polish.dart';
+import 'package:moonloom/adapters/tts/audio_polish.dart';
 
 /// A 24 kHz mono 16-bit WAV, the shape Gemini TTS returns.
 Uint8List wav(List<int> samples, {int rate = 24000}) {

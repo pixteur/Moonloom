@@ -6,13 +6,13 @@ import 'ui/profiles/profile_select_screen.dart';
 
 /// Root widget. Theming/color config and routing live here; only this UI layer
 /// changes meaningfully when porting to touch/iOS. See `docs/ui-ux.md`.
-class SleepytimeApp extends StatelessWidget {
-  const SleepytimeApp({super.key});
+class MoonloomApp extends StatelessWidget {
+  const MoonloomApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'SleepytimeApp',
+      title: 'Moonloom',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,

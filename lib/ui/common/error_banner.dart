@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 /// fact. Use for voice/story-AI failures (e.g. provider rate limits or outages).
 void showErrorBanner(BuildContext context, String message) {
   // Goes to stdout of the running app, so it lands in the launch log too.
-  debugPrint('SleepytimeApp error: $message');
+  debugPrint('MoonloomApp error: $message');
   final messenger = ScaffoldMessenger.maybeOf(context);
   if (messenger == null) return;
   messenger.clearSnackBars();

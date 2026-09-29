@@ -4,7 +4,7 @@ Guidance for Claude and other coding agents working in this repository.
 
 ## Project snapshot
 
-- `SleepytimeApp` is a Flutter-first bedtime storytelling app for children.
+- `MoonloomApp` is a Flutter-first bedtime storytelling app for children.
 - The current repo is mostly pure Dart/Flutter application code plus the generated Windows runner.
 - There is no custom native iOS/macOS layer yet, and there is no app-specific C++ portability problem yet.
 - As of now, the repo has `windows/` only. There is no `ios/` or `macos/` directory yet.

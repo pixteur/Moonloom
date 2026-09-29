@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sleepytime/adapters/export/world_cover.dart';
+import 'package:moonloom/adapters/export/world_cover.dart';
 
 /// The picture is how a child tells one pack from another on a device with no
 /// screen worth reading, so two things matter: a world always looks the same,

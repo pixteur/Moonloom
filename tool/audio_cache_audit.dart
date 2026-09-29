@@ -17,8 +17,8 @@ library;
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:sleepytime/adapters/audio/wav.dart';
-import 'package:sleepytime/adapters/tts/audio_compression.dart';
+import 'package:moonloom/adapters/audio/wav.dart';
+import 'package:moonloom/adapters/tts/audio_compression.dart';
 
 /// Trailing silence beyond this is a glitch rather than a pause. Real chunks
 /// end within a second or so of the last word.
@@ -30,7 +30,7 @@ void main(List<String> args) {
   final dir = Directory(
     args.contains('--dir')
         ? args[args.indexOf('--dir') + 1]
-        : '$home\\Documents\\Sleepytime\\audio',
+        : '$home\\Documents\\Moonloom\\audio',
   );
   if (!dir.existsSync()) {
     stderr.writeln('No audio cache at ${dir.path}');

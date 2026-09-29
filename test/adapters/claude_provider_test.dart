@@ -3,14 +3,14 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:sleepytime/adapters/ai/ai_provider.dart';
-import 'package:sleepytime/adapters/ai/claude_provider.dart';
-import 'package:sleepytime/adapters/ai/gemini_provider.dart';
-import 'package:sleepytime/adapters/ai/openai_provider.dart';
-import 'package:sleepytime/adapters/ai/provider_exceptions.dart';
-import 'package:sleepytime/adapters/secrets/secret_store.dart';
-import 'package:sleepytime/domain/models/beat.dart';
-import 'package:sleepytime/domain/prompt_builder.dart';
+import 'package:moonloom/adapters/ai/ai_provider.dart';
+import 'package:moonloom/adapters/ai/claude_provider.dart';
+import 'package:moonloom/adapters/ai/gemini_provider.dart';
+import 'package:moonloom/adapters/ai/openai_provider.dart';
+import 'package:moonloom/adapters/ai/provider_exceptions.dart';
+import 'package:moonloom/adapters/secrets/secret_store.dart';
+import 'package:moonloom/domain/models/beat.dart';
+import 'package:moonloom/domain/prompt_builder.dart';
 
 class _FakeSecrets implements SecretStore {
   _FakeSecrets(this.key);

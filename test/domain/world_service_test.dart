@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sleepytime/domain/models/beat.dart';
-import 'package:sleepytime/domain/models/series.dart';
-import 'package:sleepytime/domain/world_service.dart';
+import 'package:moonloom/domain/models/beat.dart';
+import 'package:moonloom/domain/models/series.dart';
+import 'package:moonloom/domain/world_service.dart';
 
 import '../support/in_memory_storage_repo.dart';
 

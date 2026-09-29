@@ -7,15 +7,15 @@
 
 namespace {
 
-// One copy of Sleepytime per device. Two windows would share one SQLite
+// One copy of Moonloom per device. Two windows would share one SQLite
 // database and one audio cache, so the second could silently overwrite the
 // first's stories. "Global\" makes the mutex machine-wide, so a second
 // launch is blocked even from another Windows account or a fast-user-switched
 // session — one story at a time on the family PC.
 constexpr const wchar_t kSingleInstanceMutex[] =
-    L"Global\\SleepytimeApp.SingleInstance";
+    L"Global\\Moonloom.SingleInstance";
 constexpr const wchar_t kWindowClassName[] = L"FLUTTER_RUNNER_WIN32_WINDOW";
-constexpr const wchar_t kWindowTitle[] = L"sleepytime";
+constexpr const wchar_t kWindowTitle[] = L"Moonloom";
 
 // Hand focus to the copy that's already open, so launching again feels like
 // "bring it back" rather than a silent no-op. Returns false when the running
@@ -49,9 +49,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   if (already_running) {
     if (!FocusRunningInstance()) {
       ::MessageBoxW(nullptr,
-                    L"Sleepytime is already open in another account on this "
+                    L"Moonloom is already open in another account on this "
                     L"computer. Close it there first.",
-                    L"Sleepytime", MB_OK | MB_ICONINFORMATION);
+                    L"Moonloom", MB_OK | MB_ICONINFORMATION);
     }
     if (single_instance != nullptr) {
       ::CloseHandle(single_instance);

@@ -33,7 +33,7 @@ void main(List<String> args) {
   }
 
   final db = sqlite3.open(
-    '${Platform.environment['USERPROFILE']}\\Documents\\sleepytime.sqlite',
+    '${Platform.environment['USERPROFILE']}\\Documents\\moonloom.sqlite',
   );
   // Chapters hang off the series by foreign key; without this they'd be left
   // behind as orphans.

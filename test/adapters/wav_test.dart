@@ -1,8 +1,8 @@
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sleepytime/adapters/audio/wav.dart';
-import 'package:sleepytime/adapters/tts/tts_synthesizer.dart';
+import 'package:moonloom/adapters/audio/wav.dart';
+import 'package:moonloom/adapters/tts/tts_synthesizer.dart';
 
 /// The parser has to walk the chunk list rather than assume a 44-byte header,
 /// because a writer is free to slip a `LIST` or `fact` chunk in first and the

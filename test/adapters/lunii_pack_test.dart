@@ -4,8 +4,8 @@ import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sleepytime/adapters/export/cover_image.dart';
-import 'package:sleepytime/adapters/export/lunii_pack.dart';
+import 'package:moonloom/adapters/export/cover_image.dart';
+import 'package:moonloom/adapters/export/lunii_pack.dart';
 
 /// The pack has to satisfy STUdio's ArchiveStoryPackReader: story.json at the
 /// root, assets under `assets/`, every referenced asset present, and a node

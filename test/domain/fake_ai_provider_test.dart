@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sleepytime/adapters/ai/ai_provider.dart';
-import 'package:sleepytime/adapters/ai/fake_ai_provider.dart';
-import 'package:sleepytime/domain/models/beat.dart';
-import 'package:sleepytime/domain/models/child_profile.dart';
-import 'package:sleepytime/domain/prompt_builder.dart';
+import 'package:moonloom/adapters/ai/ai_provider.dart';
+import 'package:moonloom/adapters/ai/fake_ai_provider.dart';
+import 'package:moonloom/domain/models/beat.dart';
+import 'package:moonloom/domain/models/child_profile.dart';
+import 'package:moonloom/domain/prompt_builder.dart';
 
 void main() {
   test(

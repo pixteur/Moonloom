@@ -24,10 +24,10 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
-import 'package:sleepytime/adapters/secrets/dpapi.dart';
-import 'package:sleepytime/adapters/tts/audio_polish.dart';
-import 'package:sleepytime/adapters/tts/gemini_tts_synthesizer.dart';
-import 'package:sleepytime/adapters/tts/voice_catalog.dart';
+import 'package:moonloom/adapters/secrets/dpapi.dart';
+import 'package:moonloom/adapters/tts/audio_polish.dart';
+import 'package:moonloom/adapters/tts/gemini_tts_synthesizer.dart';
+import 'package:moonloom/adapters/tts/voice_catalog.dart';
 
 const _base = 'https://generativelanguage.googleapis.com/v1beta/models';
 
@@ -60,7 +60,7 @@ const _lines = <(String, String)>[
 Future<String?> _key() async {
   final file = File(
     '${Platform.environment['APPDATA']}'
-    r'\com.pixteur\sleepytime\shared_preferences.json',
+    r'\com.pixteur\moonloom\shared_preferences.json',
   );
   if (!file.existsSync()) return null;
   final prefs = jsonDecode(await file.readAsString()) as Map<String, dynamic>;
@@ -164,7 +164,7 @@ Future<void> main(List<String> args) async {
   final client = http.Client();
 
   final outDir = Directory(
-    '${Platform.environment['USERPROFILE']}\\Desktop\\sleepytime-voice-test',
+    '${Platform.environment['USERPROFILE']}\\Desktop\\moonloom-voice-test',
   );
   if (!outDir.existsSync()) outDir.createSync(recursive: true);
 

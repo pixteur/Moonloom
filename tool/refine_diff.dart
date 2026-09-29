@@ -13,7 +13,7 @@ int _words(String s) =>
 void main(List<String> args) {
   final title = args.isNotEmpty ? args.first : 'Obsidian Stone';
   final db = sqlite3.open(
-    '${Platform.environment['USERPROFILE']}\\Documents\\sleepytime.sqlite',
+    '${Platform.environment['USERPROFILE']}\\Documents\\moonloom.sqlite',
     mode: OpenMode.readOnly,
   );
 

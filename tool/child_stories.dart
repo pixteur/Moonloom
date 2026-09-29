@@ -11,7 +11,7 @@ import 'package:sqlite3/sqlite3.dart';
 void main(List<String> args) {
   final name = args.isNotEmpty ? args.first : 'Leila';
   final path =
-      '${Platform.environment['USERPROFILE']}\\Documents\\sleepytime.sqlite';
+      '${Platform.environment['USERPROFILE']}\\Documents\\moonloom.sqlite';
   final db = sqlite3.open(path, mode: OpenMode.readOnly);
 
   final kids = db.select(

@@ -250,7 +250,7 @@ class SleepyService {
     final meta = {
       'title': series.title,
       'author': author,
-      'source': 'Generated with SleepytimeApp',
+      'source': 'Generated with MoonloomApp',
       'language': language,
       'voice': voiceSignature,
       'chapters': chaptersFound,

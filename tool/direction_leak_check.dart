@@ -22,8 +22,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:http/http.dart' as http;
-import 'package:sleepytime/adapters/secrets/dpapi.dart';
-import 'package:sleepytime/adapters/tts/gemini_tts_synthesizer.dart';
+import 'package:moonloom/adapters/secrets/dpapi.dart';
+import 'package:moonloom/adapters/tts/gemini_tts_synthesizer.dart';
 
 const _base = 'https://generativelanguage.googleapis.com/v1beta/models';
 
@@ -44,7 +44,7 @@ const _longDirection =
 Future<String?> _key() async {
   final file = File(
     '${Platform.environment['APPDATA']}'
-    r'\com.pixteur\sleepytime\shared_preferences.json',
+    r'\com.pixteur\moonloom\shared_preferences.json',
   );
   if (!file.existsSync()) return null;
   final prefs = jsonDecode(await file.readAsString()) as Map<String, dynamic>;

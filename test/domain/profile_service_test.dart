@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sleepytime/domain/models/child_profile.dart';
-import 'package:sleepytime/domain/profile_service.dart';
+import 'package:moonloom/domain/models/child_profile.dart';
+import 'package:moonloom/domain/profile_service.dart';
 
 import '../support/in_memory_storage_repo.dart';
 

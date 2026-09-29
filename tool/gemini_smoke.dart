@@ -17,14 +17,14 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:http/http.dart' as http;
-import 'package:sleepytime/adapters/ai/gemini_provider.dart';
-import 'package:sleepytime/adapters/secrets/dpapi.dart';
-import 'package:sleepytime/adapters/secrets/secret_store.dart';
-import 'package:sleepytime/domain/models/beat.dart';
-import 'package:sleepytime/domain/models/child_profile.dart';
-import 'package:sleepytime/domain/models/series.dart';
-import 'package:sleepytime/domain/models/story_request.dart';
-import 'package:sleepytime/domain/prompt_builder.dart';
+import 'package:moonloom/adapters/ai/gemini_provider.dart';
+import 'package:moonloom/adapters/secrets/dpapi.dart';
+import 'package:moonloom/adapters/secrets/secret_store.dart';
+import 'package:moonloom/domain/models/beat.dart';
+import 'package:moonloom/domain/models/child_profile.dart';
+import 'package:moonloom/domain/models/series.dart';
+import 'package:moonloom/domain/models/story_request.dart';
+import 'package:moonloom/domain/prompt_builder.dart';
 
 class _StoredKeys implements SecretStore {
   _StoredKeys(this._prefs);
@@ -32,7 +32,7 @@ class _StoredKeys implements SecretStore {
   static Future<_StoredKeys> open() async {
     final file = File(
       '${Platform.environment['APPDATA']}'
-      r'\com.pixteur\sleepytime\shared_preferences.json',
+      r'\com.pixteur\moonloom\shared_preferences.json',
     );
     if (!file.existsSync()) throw StateError('No prefs at ${file.path}');
     return _StoredKeys(

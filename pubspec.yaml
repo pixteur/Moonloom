@@ -1,4 +1,4 @@
-name: sleepytime
+name: moonloom
 description: "A new Flutter project."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
@@ -46,6 +46,7 @@ dependencies:
   flutter_tts: ^4.2.5
   audioplayers: ^6.7.1
   archive: ^4.0.7
+  file_picker: ^13.1.0
 
 dev_dependencies:
   flutter_test:
@@ -67,10 +68,10 @@ dev_dependencies:
 # Windows installer (double-click .msix). Build: `dart run msix:create`.
 # See docs/distribution.md.
 msix_config:
-  display_name: Sleepytime
+  display_name: Moonloom
   publisher_display_name: Pixteur
   publisher: CN=Pixteur # must match the signing certificate's subject
-  identity_name: com.pixteur.sleepytime
+  identity_name: com.pixteur.moonloom
   # Four parts, and it has to move with `version:` above — Windows refuses to
   # install an MSIX whose version is not higher than the one already there.
   msix_version: 1.1.0.0

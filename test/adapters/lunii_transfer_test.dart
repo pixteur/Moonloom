@@ -3,14 +3,14 @@ import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sleepytime/adapters/audio/mp3_encoder.dart';
-import 'package:sleepytime/adapters/audio/mp3_frame.dart';
-import 'package:sleepytime/adapters/audio/wav.dart';
-import 'package:sleepytime/adapters/lunii/device_writer.dart';
-import 'package:sleepytime/adapters/lunii/lunii_cipher.dart';
-import 'package:sleepytime/adapters/lunii/lunii_transfer.dart';
-import 'package:sleepytime/adapters/tts/audio_compression.dart';
-import 'package:sleepytime/adapters/tts/tts_synthesizer.dart';
+import 'package:moonloom/adapters/audio/mp3_encoder.dart';
+import 'package:moonloom/adapters/audio/mp3_frame.dart';
+import 'package:moonloom/adapters/audio/wav.dart';
+import 'package:moonloom/adapters/lunii/device_writer.dart';
+import 'package:moonloom/adapters/lunii/lunii_cipher.dart';
+import 'package:moonloom/adapters/lunii/lunii_transfer.dart';
+import 'package:moonloom/adapters/tts/audio_compression.dart';
+import 'package:moonloom/adapters/tts/tts_synthesizer.dart';
 
 /// The seam between a story's cached narration and a pack on a device.
 ///

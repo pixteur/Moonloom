@@ -18,19 +18,19 @@ library;
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:sleepytime/adapters/ai/ai_provider.dart';
-import 'package:sleepytime/adapters/ai/claude_provider.dart';
-import 'package:sleepytime/adapters/ai/gemini_provider.dart';
-import 'package:sleepytime/adapters/ai/openai_provider.dart';
-import 'package:sleepytime/adapters/secrets/dpapi.dart';
-import 'package:sleepytime/adapters/secrets/secret_store.dart';
-import 'package:sleepytime/adapters/storage/app_database.dart';
-import 'package:sleepytime/adapters/storage/drift_storage_repo.dart';
-import 'package:sleepytime/domain/models/beat.dart';
-import 'package:sleepytime/domain/models/series.dart';
-import 'package:sleepytime/domain/series_service.dart';
-import 'package:sleepytime/domain/story_engine.dart';
-import 'package:sleepytime/domain/twist_deck.dart';
+import 'package:moonloom/adapters/ai/ai_provider.dart';
+import 'package:moonloom/adapters/ai/claude_provider.dart';
+import 'package:moonloom/adapters/ai/gemini_provider.dart';
+import 'package:moonloom/adapters/ai/openai_provider.dart';
+import 'package:moonloom/adapters/secrets/dpapi.dart';
+import 'package:moonloom/adapters/secrets/secret_store.dart';
+import 'package:moonloom/adapters/storage/app_database.dart';
+import 'package:moonloom/adapters/storage/drift_storage_repo.dart';
+import 'package:moonloom/domain/models/beat.dart';
+import 'package:moonloom/domain/models/series.dart';
+import 'package:moonloom/domain/series_service.dart';
+import 'package:moonloom/domain/story_engine.dart';
+import 'package:moonloom/domain/twist_deck.dart';
 
 /// The app's own key store, read straight off disk. SharedPreferences needs
 /// Flutter bindings a `dart run` script does not have, but the file it writes
@@ -41,7 +41,7 @@ class _StoredKeys implements SecretStore {
   static Future<_StoredKeys> open() async {
     final file = File(
       '${Platform.environment['APPDATA']}'
-      r'\com.pixteur\sleepytime\shared_preferences.json',
+      r'\com.pixteur\moonloom\shared_preferences.json',
     );
     return _StoredKeys(
       jsonDecode(await file.readAsString()) as Map<String, dynamic>,

@@ -3,7 +3,7 @@ library;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:sleepytime/adapters/secrets/dpapi_secret_store.dart';
+import 'package:moonloom/adapters/secrets/dpapi_secret_store.dart';
 
 /// Windows-only: exercises the real DPAPI FFI round-trip. CI (Linux) skips this
 /// file via @TestOn; it runs on a developer's Windows machine.

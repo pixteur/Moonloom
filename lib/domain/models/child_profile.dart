@@ -10,6 +10,7 @@ class ChildProfile {
     this.detailLevel = DetailLevel.medium,
     this.themeColor = 0xFF6750A4,
     this.parentBrief,
+    this.photoKey = '',
   });
 
   final String id;
@@ -28,6 +29,11 @@ class ChildProfile {
   /// Optional free-text from a parent expressing values/tone. See `docs/safety.md`.
   final String? parentBrief;
 
+  /// A photo of this child, copied into the library and named by its content.
+  /// Empty means the coloured initial stands in — which most children will
+  /// keep, so it has to look like a choice rather than a gap.
+  final String photoKey;
+
   /// The age band drives the safety policy injected into every prompt.
   AgeBand get ageBand => AgeBand.forAge(age);
 
@@ -38,6 +44,7 @@ class ChildProfile {
     DetailLevel? detailLevel,
     int? themeColor,
     String? parentBrief,
+    String? photoKey,
   }) {
     return ChildProfile(
       id: id,
@@ -47,6 +54,7 @@ class ChildProfile {
       detailLevel: detailLevel ?? this.detailLevel,
       themeColor: themeColor ?? this.themeColor,
       parentBrief: parentBrief ?? this.parentBrief,
+      photoKey: photoKey ?? this.photoKey,
     );
   }
 }

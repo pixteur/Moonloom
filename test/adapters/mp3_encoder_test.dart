@@ -5,11 +5,11 @@ import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sleepytime/adapters/audio/lame.dart';
-import 'package:sleepytime/adapters/audio/mp3_encoder.dart';
-import 'package:sleepytime/adapters/audio/mp3_frame.dart';
-import 'package:sleepytime/adapters/audio/wav.dart';
-import 'package:sleepytime/adapters/tts/tts_synthesizer.dart';
+import 'package:moonloom/adapters/audio/lame.dart';
+import 'package:moonloom/adapters/audio/mp3_encoder.dart';
+import 'package:moonloom/adapters/audio/mp3_frame.dart';
+import 'package:moonloom/adapters/audio/wav.dart';
+import 'package:moonloom/adapters/tts/tts_synthesizer.dart';
 
 /// Real encodes through the vendored `libmp3lame.dll`. The bar is not "an MP3
 /// came out" — it is that **every** frame is MPEG-1 Layer III, 44.1 kHz, mono,

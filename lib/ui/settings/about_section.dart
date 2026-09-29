@@ -52,7 +52,7 @@ class AboutSection extends StatelessWidget {
         Text('About', style: theme.textTheme.titleMedium),
         const SizedBox(height: 8),
         Text(
-          'Sleepytime is built on other people\'s work as well as ours.',
+          'Moonloom is built on other people\'s work as well as ours.',
           style: theme.textTheme.bodySmall,
         ),
         const SizedBox(height: 12),

@@ -23,7 +23,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:http/http.dart' as http;
-import 'package:sleepytime/adapters/secrets/dpapi.dart';
+import 'package:moonloom/adapters/secrets/dpapi.dart';
 
 const _base = 'https://generativelanguage.googleapis.com/v1beta/models';
 const _model = 'gemini-3.1-flash-image';
@@ -31,7 +31,7 @@ const _model = 'gemini-3.1-flash-image';
 Future<String?> _key() async {
   final file = File(
     '${Platform.environment['APPDATA']}'
-    r'\com.pixteur\sleepytime\shared_preferences.json',
+    r'\com.pixteur\moonloom\shared_preferences.json',
   );
   if (!file.existsSync()) return null;
   final prefs = jsonDecode(await file.readAsString()) as Map<String, dynamic>;
@@ -120,7 +120,7 @@ Future<void> main() async {
   }
   final client = http.Client();
   final out = Directory(
-    '${Platform.environment['USERPROFILE']}\\Desktop\\sleepytime-reference-test',
+    '${Platform.environment['USERPROFILE']}\\Desktop\\moonloom-reference-test',
   );
   if (!out.existsSync()) out.createSync(recursive: true);
   stdout.writeln('model: $_model');

@@ -2,14 +2,14 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sleepytime/adapters/images/picture_store.dart';
-import 'package:sleepytime/adapters/images/story_illustrator.dart';
-import 'package:sleepytime/domain/illustration_service.dart';
-import 'package:sleepytime/domain/models/beat.dart';
-import 'package:sleepytime/domain/models/series.dart';
-import 'package:sleepytime/domain/models/story_character.dart';
-import 'package:sleepytime/domain/models/story_image.dart';
-import 'package:sleepytime/domain/models/world.dart';
+import 'package:moonloom/adapters/images/picture_store.dart';
+import 'package:moonloom/adapters/images/story_illustrator.dart';
+import 'package:moonloom/domain/illustration_service.dart';
+import 'package:moonloom/domain/models/beat.dart';
+import 'package:moonloom/domain/models/series.dart';
+import 'package:moonloom/domain/models/story_character.dart';
+import 'package:moonloom/domain/models/story_image.dart';
+import 'package:moonloom/domain/models/world.dart';
 
 import '../support/in_memory_storage_repo.dart';
 

@@ -2,9 +2,9 @@ import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sleepytime/adapters/image/bmp_rle4.dart';
-import 'package:sleepytime/adapters/lunii/device_pack.dart';
-import 'package:sleepytime/adapters/lunii/lunii_cipher.dart';
+import 'package:moonloom/adapters/image/bmp_rle4.dart';
+import 'package:moonloom/adapters/lunii/device_pack.dart';
+import 'package:moonloom/adapters/lunii/lunii_cipher.dart';
 
 /// A built pack has to survive exactly the checks `tool/lunii_probe.dart` runs
 /// against a real storyteller, because those are the ones that were verified

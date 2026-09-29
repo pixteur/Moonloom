@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:file_picker/file_picker.dart';
 
 import '../../app_providers.dart';
 import '../../domain/models/child_profile.dart';
@@ -9,6 +10,7 @@ import '../common/parent_gate.dart';
 import '../home/home_screen.dart';
 import '../settings/settings_screen.dart';
 import 'create_profile_screen.dart';
+import 'child_avatar.dart';
 
 /// The launch screen: pick which child is listening tonight, or (behind the
 /// parent gate) add a new one. See `docs/ui-ux.md`.
@@ -57,7 +59,7 @@ class ProfileSelectScreen extends ConsumerWidget {
             Text('🌙', style: Theme.of(context).textTheme.displayLarge),
             const SizedBox(height: 8),
             Text(
-              'Welcome to SleepytimeApp',
+              'Welcome to MoonloomApp',
               style: Theme.of(context).textTheme.headlineSmall,
             ),
             const SizedBox(height: 8),
@@ -152,14 +154,7 @@ class _ProfileCard extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 12),
             child: Column(
               children: [
-                CircleAvatar(
-                  radius: 32,
-                  backgroundColor: Color(child.themeColor),
-                  child: Text(
-                    child.displayName.characters.first.toUpperCase(),
-                    style: const TextStyle(fontSize: 28, color: Colors.white),
-                  ),
-                ),
+                ChildAvatar(child: child, size: 64),
                 const SizedBox(height: 12),
                 Text(
                   child.displayName,
@@ -193,6 +188,56 @@ class _ProfileCard extends ConsumerWidget {
   }
 
   /// The hold sheet for a child: redo the quiz, or remove them.
+  /// Choose a photo of this child from the device.
+  ///
+  /// The file is **copied into the library**, not linked to. A path into a
+  /// camera roll breaks the moment the original is moved, renamed, or tidied
+  /// away — and a child's face turning into a broken icon is exactly the kind
+  /// of small betrayal that makes an app feel unreliable. The copy is named by
+  /// its own content, like every other picture here.
+  Future<void> _pickPhoto(BuildContext context, WidgetRef ref) async {
+    final picked = await FilePicker.pickFile(
+      type: FileType.image,
+      dialogTitle: 'Choose a photo of ${child.displayName}',
+    );
+    if (picked == null) return;
+    final bytes = await picked.readAsBytes();
+    if (bytes.isEmpty) return;
+
+    // Named for the child and for the bytes, so picking the same photo twice
+    // writes the same file and two different photos never collide.
+    final key =
+        'child-${_hash(child.id)}-'
+        '${_hash('${bytes.length}${bytes.take(64).join()}')}.img';
+    await ref.read(pictureStoreProvider).write(key, bytes);
+    await ref
+        .read(profileServiceProvider)
+        .update(child.copyWith(photoKey: key));
+    ref.invalidate(profilesProvider);
+    // The picture widget caches nothing itself, but a child already on screen
+    // is holding the old file path.
+    if (context.mounted) ref.invalidate(activeChildProvider);
+  }
+
+  Future<void> _clearPhoto(WidgetRef ref) async {
+    // The file is left where it is: it is content-addressed, costs almost
+    // nothing, and a parent who removes a photo by accident should be able to
+    // put the same one back without going and finding it again.
+    await ref.read(profileServiceProvider).update(child.copyWith(photoKey: ''));
+    ref.invalidate(profilesProvider);
+  }
+
+  /// FNV-1a, the stable hash used everywhere else here. `String.hashCode`
+  /// changes between runs, and a photo whose file name moved would be a photo
+  /// that vanished.
+  String _hash(String s) {
+    var h = 0x811c9dc5;
+    for (final c in s.codeUnits) {
+      h = ((h ^ c) * 0x01000193) & 0x7FFFFFFF;
+    }
+    return h.toRadixString(16);
+  }
+
   Future<void> _holdMenu(BuildContext context, WidgetRef ref) async {
     final stories =
         (await ref.read(seriesServiceProvider).forChild(child.id)).length;
@@ -203,6 +248,19 @@ class _ProfileCard extends ConsumerWidget {
       what: child.displayName,
       icon: '🧒',
       extras: [
+        HoldAction(
+          icon: Icons.photo_camera_outlined,
+          label: child.photoKey.isEmpty ? 'Add a photo' : 'Change the photo',
+          subtitle: 'Choose a picture of ${child.displayName}',
+          onTap: () => _pickPhoto(context, ref),
+        ),
+        if (child.photoKey.isNotEmpty)
+          HoldAction(
+            icon: Icons.hide_image_outlined,
+            label: 'Remove the photo',
+            subtitle: 'Go back to the letter',
+            onTap: () => _clearPhoto(ref),
+          ),
         HoldAction(
           icon: Icons.quiz_outlined,
           label: 'Redo the quiz',

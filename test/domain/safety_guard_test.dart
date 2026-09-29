@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sleepytime/domain/models/beat.dart';
-import 'package:sleepytime/domain/models/child_profile.dart';
-import 'package:sleepytime/domain/models/story_segment.dart';
-import 'package:sleepytime/domain/safety_guard.dart';
+import 'package:moonloom/domain/models/beat.dart';
+import 'package:moonloom/domain/models/child_profile.dart';
+import 'package:moonloom/domain/models/story_segment.dart';
+import 'package:moonloom/domain/safety_guard.dart';
 
 void main() {
   const guard = SafetyGuard();

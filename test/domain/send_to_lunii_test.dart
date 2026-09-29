@@ -2,15 +2,15 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sleepytime/adapters/audio/mp3_encoder.dart';
-import 'package:sleepytime/adapters/lunii/device_writer.dart';
-import 'package:sleepytime/adapters/tts/audio_cache.dart';
-import 'package:sleepytime/adapters/tts/audio_compression.dart';
-import 'package:sleepytime/adapters/tts/narrated_chunks.dart';
-import 'package:sleepytime/adapters/tts/tts_synthesizer.dart';
-import 'package:sleepytime/domain/models/beat.dart';
-import 'package:sleepytime/domain/models/series.dart';
-import 'package:sleepytime/domain/sleepy_service.dart';
+import 'package:moonloom/adapters/audio/mp3_encoder.dart';
+import 'package:moonloom/adapters/lunii/device_writer.dart';
+import 'package:moonloom/adapters/tts/audio_cache.dart';
+import 'package:moonloom/adapters/tts/audio_compression.dart';
+import 'package:moonloom/adapters/tts/narrated_chunks.dart';
+import 'package:moonloom/adapters/tts/tts_synthesizer.dart';
+import 'package:moonloom/domain/models/beat.dart';
+import 'package:moonloom/domain/models/series.dart';
+import 'package:moonloom/domain/sleepy_service.dart';
 
 import '../support/in_memory_storage_repo.dart';
 

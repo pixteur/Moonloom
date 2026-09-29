@@ -1,4 +1,4 @@
-# SleepytimeApp
+# MoonloomApp
 
 A kids' nighttime storytelling app. Each night you **seed a story**, then **roll the dice** or pick from **6 openings dealt at random from a ~50-card deck**, and the app uses an AI model (Claude / OpenAI / Gemini) to invent the next chapter on the spot — read aloud in an expressive character voice.
 
@@ -66,8 +66,8 @@ _(The phased internal roadmap under `build-plan/` is kept local and is git-ignor
 **Run**
 
 ```powershell
-git clone https://github.com/pixteur/SleepytimeApp.git
-cd SleepytimeApp
+git clone https://github.com/pixteur/MoonloomApp.git
+cd MoonloomApp
 flutter pub get           # install dependencies
 flutter run -d windows    # run the desktop app (opens portrait, phone-sized)
 ```
@@ -76,7 +76,7 @@ Or build a debug exe and launch it directly:
 
 ```powershell
 flutter build windows --debug
-.\build\windows\x64\runner\Debug\sleepytime.exe
+.\build\windows\x64\runner\Debug\moonloom.exe
 ```
 
 **Configure AI + voice (in-app):** open the ⚙️ grown-up settings (parental gate) → add a provider API key + consent (Claude/OpenAI/Gemini) → scroll down to the Voice section to pick a cloud voice. Keys are stored securely on-device (DPAPI); nothing is sent until you add a key and consent.
@@ -95,7 +95,7 @@ flutter test             # unit/widget tests
 dart run build_runner build --delete-conflicting-outputs
 ```
 
-**Where data lives:** on-device only — SQLite DB + a `Sleepytime/` story library (audio, `.sleepy` exports) under your Documents folder. See [docs/storage-layout.md](docs/storage-layout.md).
+**Where data lives:** on-device only — SQLite DB + a `Moonloom/` story library (audio, `.sleepy` exports) under your Documents folder. See [docs/storage-layout.md](docs/storage-layout.md).
 
 ## Windows installer (MSIX)
 
@@ -103,7 +103,7 @@ Build a double-click installer:
 
 ```powershell
 pwsh scripts/build_windows_installer.ps1
-# → build\windows\x64\runner\Release\sleepytime.msix
+# → build\windows\x64\runner\Release\moonloom.msix
 ```
 
 The script does a release build, generates the MSIX manifest (`dart run msix:build`),
@@ -118,17 +118,17 @@ or Windows won't install it:
 1. Create a self-signed cert (once) and export the public cert:
    ```powershell
    $c = New-SelfSignedCertificate -Type CodeSigningCert -Subject "CN=Pixteur" -CertStoreLocation Cert:\CurrentUser\My
-   Export-Certificate -Cert $c -FilePath sleepytime.cer
+   Export-Certificate -Cert $c -FilePath moonloom.cer
    ```
    Make sure `msix_config.publisher` in `pubspec.yaml` matches the cert subject
    (`CN=Pixteur`), then rebuild.
 2. Sign the package with the Windows SDK's `signtool.exe` (found under
    `C:\Program Files (x86)\Windows Kits\10\bin\<ver>\x64\`):
    ```powershell
-   signtool.exe sign /fd SHA256 /a build\windows\x64\runner\Release\sleepytime.msix
+   signtool.exe sign /fd SHA256 /a build\windows\x64\runner\Release\moonloom.msix
    ```
    (`/a` auto-selects your cert; or use `/f cert.pfx /p <password>`.)
-3. On the target PC, import `sleepytime.cer` into **Local Machine → Trusted People**,
+3. On the target PC, import `moonloom.cer` into **Local Machine → Trusted People**,
    then double-click the `.msix` to install.
 
 For release, use a real **EV/OV code-signing certificate** or ship via the

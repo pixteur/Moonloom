@@ -18,7 +18,7 @@ void main(List<String> args) {
   final seq = args.length > 1 ? int.parse(args[1]) - 1 : 0;
 
   final db = sqlite3.open(
-    '${Platform.environment['USERPROFILE']}\\Documents\\sleepytime.sqlite',
+    '${Platform.environment['USERPROFILE']}\\Documents\\moonloom.sqlite',
     mode: OpenMode.readOnly,
   );
   final s = db.select('select id from series where title = ?', [title]);

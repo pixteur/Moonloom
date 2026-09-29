@@ -8,16 +8,16 @@ import 'package:path_provider/path_provider.dart';
 /// or share:
 ///
 /// ```
-/// <Documents>/Sleepytime/
+/// <Documents>/Moonloom/
 ///   ├── audio/     cached narration (one file per voice + chapter)
 ///   ├── stories/   exported .sleepy files (text + audio bundles)
 ///   └── images/    story covers / character art (future)
 /// ```
 ///
-/// The Drift database (`sleepytime.sqlite`) stays at the Documents root.
+/// The Drift database (`moonloom.sqlite`) stays at the Documents root.
 /// See `docs/storage-layout.md`.
 class LibraryPaths {
-  static const String rootName = 'Sleepytime';
+  static const String rootName = 'Moonloom';
 
   static Future<Directory> _sub(String name) async {
     final base = await getApplicationDocumentsDirectory();

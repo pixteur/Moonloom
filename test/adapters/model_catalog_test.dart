@@ -3,9 +3,9 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:sleepytime/adapters/ai/model_catalog.dart';
-import 'package:sleepytime/adapters/ai/provider_exceptions.dart';
-import 'package:sleepytime/adapters/secrets/secret_store.dart';
+import 'package:moonloom/adapters/ai/model_catalog.dart';
+import 'package:moonloom/adapters/ai/provider_exceptions.dart';
+import 'package:moonloom/adapters/secrets/secret_store.dart';
 
 /// Each vendor answers in its own shape. The bodies here are trimmed copies of
 /// the real responses — the parsing has to survive the fields we don't use.

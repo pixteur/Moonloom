@@ -19,7 +19,7 @@ void main(List<String> args) {
       ? args[at + 1]
       : r''
             '${Platform.environment['USERPROFILE']}'
-            r'\Documents\sleepytime.sqlite';
+            r'\Documents\moonloom.sqlite';
   final db = sqlite3.open(path, mode: OpenMode.readOnly);
 
   final version = db.select('pragma user_version').first['user_version'];

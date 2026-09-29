@@ -16,10 +16,10 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:http/http.dart' as http;
-import 'package:sleepytime/adapters/secrets/dpapi.dart';
-import 'package:sleepytime/adapters/secrets/secret_store.dart';
-import 'package:sleepytime/adapters/tts/gemini_tts_synthesizer.dart';
-import 'package:sleepytime/domain/models/narration.dart';
+import 'package:moonloom/adapters/secrets/dpapi.dart';
+import 'package:moonloom/adapters/secrets/secret_store.dart';
+import 'package:moonloom/adapters/tts/gemini_tts_synthesizer.dart';
+import 'package:moonloom/domain/models/narration.dart';
 
 class _StoredKeys implements SecretStore {
   _StoredKeys(this._prefs);
@@ -27,7 +27,7 @@ class _StoredKeys implements SecretStore {
   static Future<_StoredKeys> open() async {
     final file = File(
       '${Platform.environment['APPDATA']}'
-      r'\com.pixteur\sleepytime\shared_preferences.json',
+      r'\com.pixteur\moonloom\shared_preferences.json',
     );
     if (!file.existsSync()) throw StateError('No prefs at ${file.path}');
     return _StoredKeys(

@@ -1,11 +1,11 @@
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sleepytime/adapters/tts/audio_cache.dart';
-import 'package:sleepytime/adapters/tts/narrated_chunks.dart';
-import 'package:sleepytime/domain/models/beat.dart';
-import 'package:sleepytime/domain/models/narration.dart';
-import 'package:sleepytime/domain/saved_narration.dart';
+import 'package:moonloom/adapters/tts/audio_cache.dart';
+import 'package:moonloom/adapters/tts/narrated_chunks.dart';
+import 'package:moonloom/domain/models/beat.dart';
+import 'package:moonloom/domain/models/narration.dart';
+import 'package:moonloom/domain/saved_narration.dart';
 
 /// Narration is keyed by the voice that spoke it, so changing voice makes
 /// every downloaded chapter look undownloaded. Nothing is deleted — 600 MB of

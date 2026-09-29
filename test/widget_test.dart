@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sleepytime/app.dart';
-import 'package:sleepytime/app_providers.dart';
+import 'package:moonloom/app.dart';
+import 'package:moonloom/app_providers.dart';
 
 import 'support/in_memory_storage_repo.dart';
 
@@ -16,13 +16,13 @@ void main() {
         overrides: [
           storageRepoProvider.overrideWithValue(InMemoryStorageRepo()),
         ],
-        child: const SleepytimeApp(),
+        child: const MoonloomApp(),
       ),
     );
     await tester.pumpAndSettle();
 
     // Fresh repo → empty state welcome.
-    expect(find.text('Welcome to SleepytimeApp'), findsOneWidget);
+    expect(find.text('Welcome to MoonloomApp'), findsOneWidget);
     expect(find.text('Add a child'), findsOneWidget);
   });
 }

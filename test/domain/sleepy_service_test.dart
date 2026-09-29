@@ -1,12 +1,12 @@
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sleepytime/adapters/tts/audio_cache.dart';
-import 'package:sleepytime/domain/models/beat.dart';
-import 'package:sleepytime/domain/models/series.dart';
-import 'package:sleepytime/domain/models/story_character.dart';
-import 'package:sleepytime/domain/models/world.dart';
-import 'package:sleepytime/domain/sleepy_service.dart';
+import 'package:moonloom/adapters/tts/audio_cache.dart';
+import 'package:moonloom/domain/models/beat.dart';
+import 'package:moonloom/domain/models/series.dart';
+import 'package:moonloom/domain/models/story_character.dart';
+import 'package:moonloom/domain/models/world.dart';
+import 'package:moonloom/domain/sleepy_service.dart';
 
 import '../support/in_memory_storage_repo.dart';
 

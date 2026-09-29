@@ -10,8 +10,8 @@ library;
 
 import 'dart:io';
 
-import 'package:sleepytime/adapters/storage/app_database.dart';
-import 'package:sleepytime/adapters/storage/drift_storage_repo.dart';
+import 'package:moonloom/adapters/storage/app_database.dart';
+import 'package:moonloom/adapters/storage/drift_storage_repo.dart';
 
 Future<void> main(List<String> args) async {
   final write = args.contains('--write');

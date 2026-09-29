@@ -13,7 +13,7 @@ library;
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:sleepytime/adapters/lunii/lunii_cipher.dart';
+import 'package:moonloom/adapters/lunii/lunii_cipher.dart';
 
 /// Orderings to try for pulling four 32-bit words out of the deciphered block.
 /// The first is the one the reverse-engineering notes describe.

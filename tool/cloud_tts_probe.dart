@@ -17,14 +17,14 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:http/http.dart' as http;
-import 'package:sleepytime/adapters/secrets/dpapi.dart';
+import 'package:moonloom/adapters/secrets/dpapi.dart';
 
 const _base = 'https://texttospeech.googleapis.com/v1';
 
 Future<String?> _key() async {
   final file = File(
     '${Platform.environment['APPDATA']}'
-    r'\com.pixteur\sleepytime\shared_preferences.json',
+    r'\com.pixteur\moonloom\shared_preferences.json',
   );
   if (!file.existsSync()) return null;
   final prefs = jsonDecode(await file.readAsString()) as Map<String, dynamic>;

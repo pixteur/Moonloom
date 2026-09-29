@@ -3,9 +3,9 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:sleepytime/adapters/secrets/secret_store.dart';
-import 'package:sleepytime/adapters/tts/elevenlabs_tts_synthesizer.dart';
-import 'package:sleepytime/domain/models/narration.dart';
+import 'package:moonloom/adapters/secrets/secret_store.dart';
+import 'package:moonloom/adapters/tts/elevenlabs_tts_synthesizer.dart';
+import 'package:moonloom/domain/models/narration.dart';
 
 class _FakeSecrets implements SecretStore {
   @override

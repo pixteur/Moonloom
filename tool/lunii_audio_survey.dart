@@ -21,8 +21,8 @@ library;
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:sleepytime/adapters/audio/mp3_frame.dart';
-import 'package:sleepytime/adapters/lunii/lunii_cipher.dart';
+import 'package:moonloom/adapters/audio/mp3_frame.dart';
+import 'package:moonloom/adapters/lunii/lunii_cipher.dart';
 
 void main(List<String> args) {
   final root = args.isEmpty ? 'F:' : args.first;

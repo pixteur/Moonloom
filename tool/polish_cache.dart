@@ -20,14 +20,14 @@ import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
 
-import 'package:sleepytime/adapters/tts/audio_compression.dart';
-import 'package:sleepytime/adapters/tts/audio_polish.dart';
+import 'package:moonloom/adapters/tts/audio_compression.dart';
+import 'package:moonloom/adapters/tts/audio_polish.dart';
 
 Directory _cacheDir() {
   final appData = Platform.environment['APPDATA'];
   for (final candidate in [
-    Directory('$appData\\com.pixteur\\sleepytime\\audio_cache'),
-    Directory('$appData\\com.pixteur\\sleepytime\\library\\audio_cache'),
+    Directory('$appData\\com.pixteur\\moonloom\\audio_cache'),
+    Directory('$appData\\com.pixteur\\moonloom\\library\\audio_cache'),
   ]) {
     if (candidate.existsSync()) return candidate;
   }

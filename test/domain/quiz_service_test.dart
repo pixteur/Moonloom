@@ -1,11 +1,11 @@
 import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sleepytime/domain/models/child_profile.dart';
-import 'package:sleepytime/domain/models/interest.dart';
-import 'package:sleepytime/domain/models/quiz_question.dart';
-import 'package:sleepytime/domain/quiz_bank.dart';
-import 'package:sleepytime/domain/quiz_service.dart';
+import 'package:moonloom/domain/models/child_profile.dart';
+import 'package:moonloom/domain/models/interest.dart';
+import 'package:moonloom/domain/models/quiz_question.dart';
+import 'package:moonloom/domain/quiz_bank.dart';
+import 'package:moonloom/domain/quiz_service.dart';
 
 import '../support/in_memory_storage_repo.dart';
 

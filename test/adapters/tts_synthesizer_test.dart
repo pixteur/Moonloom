@@ -4,12 +4,12 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:sleepytime/adapters/ai/provider_exceptions.dart';
-import 'package:sleepytime/adapters/secrets/secret_store.dart';
-import 'package:sleepytime/adapters/tts/elevenlabs_tts_synthesizer.dart';
-import 'package:sleepytime/adapters/tts/gemini_tts_synthesizer.dart';
-import 'package:sleepytime/adapters/tts/openai_tts_synthesizer.dart';
-import 'package:sleepytime/adapters/tts/tts_synthesizer.dart';
+import 'package:moonloom/adapters/ai/provider_exceptions.dart';
+import 'package:moonloom/adapters/secrets/secret_store.dart';
+import 'package:moonloom/adapters/tts/elevenlabs_tts_synthesizer.dart';
+import 'package:moonloom/adapters/tts/gemini_tts_synthesizer.dart';
+import 'package:moonloom/adapters/tts/openai_tts_synthesizer.dart';
+import 'package:moonloom/adapters/tts/tts_synthesizer.dart';
 
 class _FakeSecrets implements SecretStore {
   _FakeSecrets(this.key);

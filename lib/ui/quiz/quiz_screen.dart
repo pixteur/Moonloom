@@ -29,6 +29,32 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
   int _index = 0;
   bool _submitting = false;
 
+  /// What this child said last time, by question id.
+  ///
+  /// The bank draws a different question per dimension each run, so most of
+  /// these will not come up again — but when one does, showing the old answer
+  /// is the difference between "answer these again" and "has this changed?".
+  /// A five-year-old who wanted the dragon and now wants the puzzle has told
+  /// you something; a five-year-old answering a blank form has not.
+  ///
+  /// Never pre-selected, only marked. The point is to notice a change, and an
+  /// answer already filled in is an answer nobody reconsiders.
+  Map<String, String> _before = const {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPrevious();
+  }
+
+  Future<void> _loadPrevious() async {
+    final last = await ref
+        .read(storageRepoProvider)
+        .latestQuizResult(widget.child.id);
+    if (!mounted || last == null) return;
+    setState(() => _before = last.answers);
+  }
+
   QuizQuestion get _q => _questions[_index];
   bool get _isLast => _index == _questions.length - 1;
 
@@ -157,8 +183,41 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                 onPressed: _submitting ? null : () => _choose(option),
                 style: FilledButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 18),
+                  // Marked, not selected: a chosen-looking button is a button
+                  // nobody reconsiders, and reconsidering is the whole point
+                  // of asking again.
+                  side: _before[_q.id] == option
+                      ? BorderSide(
+                          color: Theme.of(context).colorScheme.primary,
+                          width: 2,
+                        )
+                      : null,
                 ),
-                child: Text(option),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Flexible(child: Text(option)),
+                    if (_before[_q.id] == option) ...[
+                      const SizedBox(width: 8),
+                      Icon(
+                        Icons.history_rounded,
+                        size: 16,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          if (_before.containsKey(_q.id))
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                'Last time: ${_before[_q.id]}',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             ),
         ],
@@ -172,8 +231,15 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
           autofocus: true,
           maxLines: 2,
           textCapitalization: TextCapitalization.sentences,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             hintText: 'Type an answer… (you can skip this one)',
+            // Shown, not filled in, for the same reason the buttons are only
+            // marked: a box already containing last year's answer is a box
+            // that gets tapped past.
+            helperText: _before.containsKey(_q.id)
+                ? 'Last time: ${_before[_q.id]}'
+                : null,
+            helperMaxLines: 2,
           ),
           onSubmitted: (_) => _next(),
         ),

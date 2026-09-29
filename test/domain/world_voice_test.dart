@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sleepytime/adapters/tts/gemini_tts_synthesizer.dart';
-import 'package:sleepytime/adapters/tts/voice_catalog.dart';
-import 'package:sleepytime/domain/models/series.dart';
-import 'package:sleepytime/domain/models/world.dart';
+import 'package:moonloom/adapters/tts/gemini_tts_synthesizer.dart';
+import 'package:moonloom/adapters/tts/voice_catalog.dart';
+import 'package:moonloom/domain/models/series.dart';
+import 'package:moonloom/domain/models/world.dart';
 
 void main() {
   group('a world keeps its own storyteller', () {

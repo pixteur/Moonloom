@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sleepytime/adapters/tts/narrated_chunks.dart';
-import 'package:sleepytime/domain/models/narration.dart';
+import 'package:moonloom/adapters/tts/narrated_chunks.dart';
+import 'package:moonloom/domain/models/narration.dart';
 
 /// Stand-in for the reader's size-based splitter: one chunk per call, so the
 /// tests measure the hybrid rule rather than the size heuristic.

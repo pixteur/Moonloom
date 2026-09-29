@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sleepytime/domain/spoken_text.dart';
+import 'package:moonloom/domain/spoken_text.dart';
 
 void main() {
   // Every one of these came out of the real library via

@@ -22,8 +22,8 @@ library;
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:sleepytime/adapters/image/bmp_rle4.dart';
-import 'package:sleepytime/adapters/lunii/lunii_cipher.dart';
+import 'package:moonloom/adapters/image/bmp_rle4.dart';
+import 'package:moonloom/adapters/lunii/lunii_cipher.dart';
 
 /// BMP compression values, from the `biCompression` field.
 const Map<int, String> _compression = {

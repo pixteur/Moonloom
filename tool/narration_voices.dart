@@ -12,8 +12,8 @@ library;
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:sleepytime/adapters/tts/narrated_chunks.dart';
-import 'package:sleepytime/domain/models/narration.dart';
+import 'package:moonloom/adapters/tts/narrated_chunks.dart';
+import 'package:moonloom/domain/models/narration.dart';
 import 'package:sqlite3/sqlite3.dart';
 
 /// Every voice signature worth trying: the ones the app has recorded, plus
@@ -39,12 +39,12 @@ List<String> _candidates(Map<String, dynamic> prefs) {
 
 void main() {
   final home = Platform.environment['USERPROFILE'];
-  final audioDir = Directory('$home\\Documents\\Sleepytime\\audio');
+  final audioDir = Directory('$home\\Documents\\Moonloom\\audio');
   final prefs =
       jsonDecode(
             File(
               '${Platform.environment['APPDATA']}'
-              r'\com.pixteur\sleepytime\shared_preferences.json',
+              r'\com.pixteur\moonloom\shared_preferences.json',
             ).readAsStringSync(),
           )
           as Map<String, dynamic>;
@@ -58,7 +58,7 @@ void main() {
     ..writeln('voices tried: ${voices.length}\n');
 
   final db = sqlite3.open(
-    '$home\\Documents\\sleepytime.sqlite',
+    '$home\\Documents\\moonloom.sqlite',
     mode: OpenMode.readOnly,
   );
   for (final s in db.select('select id, title, base_language from series')) {

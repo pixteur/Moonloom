@@ -13,7 +13,7 @@ void main(List<String> args) {
   // with build\windows\x64\runner\Debug on PATH so the loader finds it.
   final path = args.isNotEmpty
       ? args.first
-      : '${Platform.environment['USERPROFILE']}\\Documents\\sleepytime.sqlite';
+      : '${Platform.environment['USERPROFILE']}\\Documents\\moonloom.sqlite';
   stdout.writeln('db: $path');
 
   final db = sqlite3.open(path, mode: OpenMode.readOnly);

@@ -1,8 +1,8 @@
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sleepytime/adapters/tts/audio_compression.dart';
-import 'package:sleepytime/adapters/tts/tts_synthesizer.dart';
+import 'package:moonloom/adapters/tts/audio_compression.dart';
+import 'package:moonloom/adapters/tts/tts_synthesizer.dart';
 
 void main() {
   group('audio compression round-trip', () {

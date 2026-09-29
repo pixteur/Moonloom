@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sleepytime/adapters/audio/mp3_frame.dart';
+import 'package:moonloom/adapters/audio/mp3_frame.dart';
 
 /// This header parse is what decides whether a file will play on the
 /// storyteller, both when checking the device and when checking our own

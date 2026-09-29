@@ -1,8 +1,8 @@
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sleepytime/adapters/export/cover_image.dart';
-import 'package:sleepytime/adapters/image/bmp_rle4.dart';
+import 'package:moonloom/adapters/export/cover_image.dart';
+import 'package:moonloom/adapters/image/bmp_rle4.dart';
 
 /// The format is pinned by what 199 real images on a device turned out to be,
 /// so these check the same things `tool/lunii_image_survey.dart` checks:

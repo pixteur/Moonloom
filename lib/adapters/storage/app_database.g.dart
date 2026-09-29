@@ -82,6 +82,18 @@ class $ChildProfilesTable extends ChildProfiles
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _photoKeyMeta = const VerificationMeta(
+    'photoKey',
+  );
+  @override
+  late final GeneratedColumn<String> photoKey = GeneratedColumn<String>(
+    'photo_key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -115,6 +127,7 @@ class $ChildProfilesTable extends ChildProfiles
     detailLevel,
     themeColor,
     parentBrief,
+    photoKey,
     createdAt,
     updatedAt,
   ];
@@ -175,6 +188,12 @@ class $ChildProfilesTable extends ChildProfiles
         ),
       );
     }
+    if (data.containsKey('photo_key')) {
+      context.handle(
+        _photoKeyMeta,
+        photoKey.isAcceptableOrUnknown(data['photo_key']!, _photoKeyMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -226,6 +245,10 @@ class $ChildProfilesTable extends ChildProfiles
         DriftSqlType.string,
         data['${effectivePrefix}parent_brief'],
       ),
+      photoKey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}photo_key'],
+      )!,
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -254,6 +277,10 @@ class ChildProfileRow extends DataClass implements Insertable<ChildProfileRow> {
   final DetailLevel detailLevel;
   final int themeColor;
   final String? parentBrief;
+
+  /// A photo of this child, copied into the library and named by its content.
+  /// A path into the camera roll would break the moment the original moved.
+  final String photoKey;
   final DateTime createdAt;
   final DateTime updatedAt;
   const ChildProfileRow({
@@ -264,6 +291,7 @@ class ChildProfileRow extends DataClass implements Insertable<ChildProfileRow> {
     required this.detailLevel,
     required this.themeColor,
     this.parentBrief,
+    required this.photoKey,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -283,6 +311,7 @@ class ChildProfileRow extends DataClass implements Insertable<ChildProfileRow> {
     if (!nullToAbsent || parentBrief != null) {
       map['parent_brief'] = Variable<String>(parentBrief);
     }
+    map['photo_key'] = Variable<String>(photoKey);
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     return map;
@@ -299,6 +328,7 @@ class ChildProfileRow extends DataClass implements Insertable<ChildProfileRow> {
       parentBrief: parentBrief == null && nullToAbsent
           ? const Value.absent()
           : Value(parentBrief),
+      photoKey: Value(photoKey),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
     );
@@ -319,6 +349,7 @@ class ChildProfileRow extends DataClass implements Insertable<ChildProfileRow> {
       ),
       themeColor: serializer.fromJson<int>(json['themeColor']),
       parentBrief: serializer.fromJson<String?>(json['parentBrief']),
+      photoKey: serializer.fromJson<String>(json['photoKey']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
@@ -336,6 +367,7 @@ class ChildProfileRow extends DataClass implements Insertable<ChildProfileRow> {
       ),
       'themeColor': serializer.toJson<int>(themeColor),
       'parentBrief': serializer.toJson<String?>(parentBrief),
+      'photoKey': serializer.toJson<String>(photoKey),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
@@ -349,6 +381,7 @@ class ChildProfileRow extends DataClass implements Insertable<ChildProfileRow> {
     DetailLevel? detailLevel,
     int? themeColor,
     Value<String?> parentBrief = const Value.absent(),
+    String? photoKey,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) => ChildProfileRow(
@@ -359,6 +392,7 @@ class ChildProfileRow extends DataClass implements Insertable<ChildProfileRow> {
     detailLevel: detailLevel ?? this.detailLevel,
     themeColor: themeColor ?? this.themeColor,
     parentBrief: parentBrief.present ? parentBrief.value : this.parentBrief,
+    photoKey: photoKey ?? this.photoKey,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
   );
@@ -379,6 +413,7 @@ class ChildProfileRow extends DataClass implements Insertable<ChildProfileRow> {
       parentBrief: data.parentBrief.present
           ? data.parentBrief.value
           : this.parentBrief,
+      photoKey: data.photoKey.present ? data.photoKey.value : this.photoKey,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -394,6 +429,7 @@ class ChildProfileRow extends DataClass implements Insertable<ChildProfileRow> {
           ..write('detailLevel: $detailLevel, ')
           ..write('themeColor: $themeColor, ')
           ..write('parentBrief: $parentBrief, ')
+          ..write('photoKey: $photoKey, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -409,6 +445,7 @@ class ChildProfileRow extends DataClass implements Insertable<ChildProfileRow> {
     detailLevel,
     themeColor,
     parentBrief,
+    photoKey,
     createdAt,
     updatedAt,
   );
@@ -423,6 +460,7 @@ class ChildProfileRow extends DataClass implements Insertable<ChildProfileRow> {
           other.detailLevel == this.detailLevel &&
           other.themeColor == this.themeColor &&
           other.parentBrief == this.parentBrief &&
+          other.photoKey == this.photoKey &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -435,6 +473,7 @@ class ChildProfilesCompanion extends UpdateCompanion<ChildProfileRow> {
   final Value<DetailLevel> detailLevel;
   final Value<int> themeColor;
   final Value<String?> parentBrief;
+  final Value<String> photoKey;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<int> rowid;
@@ -446,6 +485,7 @@ class ChildProfilesCompanion extends UpdateCompanion<ChildProfileRow> {
     this.detailLevel = const Value.absent(),
     this.themeColor = const Value.absent(),
     this.parentBrief = const Value.absent(),
+    this.photoKey = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -458,6 +498,7 @@ class ChildProfilesCompanion extends UpdateCompanion<ChildProfileRow> {
     required DetailLevel detailLevel,
     this.themeColor = const Value.absent(),
     this.parentBrief = const Value.absent(),
+    this.photoKey = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -473,6 +514,7 @@ class ChildProfilesCompanion extends UpdateCompanion<ChildProfileRow> {
     Expression<int>? detailLevel,
     Expression<int>? themeColor,
     Expression<String>? parentBrief,
+    Expression<String>? photoKey,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
@@ -485,6 +527,7 @@ class ChildProfilesCompanion extends UpdateCompanion<ChildProfileRow> {
       if (detailLevel != null) 'detail_level': detailLevel,
       if (themeColor != null) 'theme_color': themeColor,
       if (parentBrief != null) 'parent_brief': parentBrief,
+      if (photoKey != null) 'photo_key': photoKey,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
@@ -499,6 +542,7 @@ class ChildProfilesCompanion extends UpdateCompanion<ChildProfileRow> {
     Value<DetailLevel>? detailLevel,
     Value<int>? themeColor,
     Value<String?>? parentBrief,
+    Value<String>? photoKey,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
     Value<int>? rowid,
@@ -511,6 +555,7 @@ class ChildProfilesCompanion extends UpdateCompanion<ChildProfileRow> {
       detailLevel: detailLevel ?? this.detailLevel,
       themeColor: themeColor ?? this.themeColor,
       parentBrief: parentBrief ?? this.parentBrief,
+      photoKey: photoKey ?? this.photoKey,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
@@ -543,6 +588,9 @@ class ChildProfilesCompanion extends UpdateCompanion<ChildProfileRow> {
     if (parentBrief.present) {
       map['parent_brief'] = Variable<String>(parentBrief.value);
     }
+    if (photoKey.present) {
+      map['photo_key'] = Variable<String>(photoKey.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -565,6 +613,7 @@ class ChildProfilesCompanion extends UpdateCompanion<ChildProfileRow> {
           ..write('detailLevel: $detailLevel, ')
           ..write('themeColor: $themeColor, ')
           ..write('parentBrief: $parentBrief, ')
+          ..write('photoKey: $photoKey, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
@@ -5863,6 +5912,7 @@ typedef $$ChildProfilesTableCreateCompanionBuilder =
       required DetailLevel detailLevel,
       Value<int> themeColor,
       Value<String?> parentBrief,
+      Value<String> photoKey,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
       Value<int> rowid,
@@ -5876,6 +5926,7 @@ typedef $$ChildProfilesTableUpdateCompanionBuilder =
       Value<DetailLevel> detailLevel,
       Value<int> themeColor,
       Value<String?> parentBrief,
+      Value<String> photoKey,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
       Value<int> rowid,
@@ -6026,6 +6077,11 @@ class $$ChildProfilesTableFilterComposer
 
   ColumnFilters<String> get parentBrief => $composableBuilder(
     column: $table.parentBrief,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get photoKey => $composableBuilder(
+    column: $table.photoKey,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -6209,6 +6265,11 @@ class $$ChildProfilesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get photoKey => $composableBuilder(
+    column: $table.photoKey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -6258,6 +6319,9 @@ class $$ChildProfilesTableAnnotationComposer
     column: $table.parentBrief,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get photoKey =>
+      $composableBuilder(column: $table.photoKey, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -6432,6 +6496,7 @@ class $$ChildProfilesTableTableManager
                 Value<DetailLevel> detailLevel = const Value.absent(),
                 Value<int> themeColor = const Value.absent(),
                 Value<String?> parentBrief = const Value.absent(),
+                Value<String> photoKey = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -6443,6 +6508,7 @@ class $$ChildProfilesTableTableManager
                 detailLevel: detailLevel,
                 themeColor: themeColor,
                 parentBrief: parentBrief,
+                photoKey: photoKey,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,
@@ -6456,6 +6522,7 @@ class $$ChildProfilesTableTableManager
                 required DetailLevel detailLevel,
                 Value<int> themeColor = const Value.absent(),
                 Value<String?> parentBrief = const Value.absent(),
+                Value<String> photoKey = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -6467,6 +6534,7 @@ class $$ChildProfilesTableTableManager
                 detailLevel: detailLevel,
                 themeColor: themeColor,
                 parentBrief: parentBrief,
+                photoKey: photoKey,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,

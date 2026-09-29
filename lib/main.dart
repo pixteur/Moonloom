@@ -2,10 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app.dart';
+import 'adapters/storage/rename_migration.dart';
 import 'app_providers.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // The app used to be called Sleepytime, and on Windows the name decides
+  // where the data lives — the support directory is built from the
+  // executable's ProductName. Renaming without this would point a family at
+  // an empty folder: no stories, no narration, no saved keys. Runs before
+  // anything is opened, copies rather than moves, and never overwrites.
+  await carryOverFromOldName(await windowsRenamePaths());
 
   // Resolve the configured story + voice providers BEFORE the first frame.
   // These read from prefs + secure storage asynchronously; if we let the UI
@@ -19,9 +27,6 @@ Future<void> main() async {
   ]);
 
   runApp(
-    UncontrolledProviderScope(
-      container: container,
-      child: const SleepytimeApp(),
-    ),
+    UncontrolledProviderScope(container: container, child: const MoonloomApp()),
   );
 }

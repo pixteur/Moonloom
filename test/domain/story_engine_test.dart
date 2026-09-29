@@ -1,14 +1,14 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sleepytime/adapters/ai/ai_provider.dart';
-import 'package:sleepytime/adapters/ai/fake_ai_provider.dart';
-import 'package:sleepytime/domain/models/beat.dart';
-import 'package:sleepytime/domain/models/cast_changes.dart';
-import 'package:sleepytime/domain/models/child_profile.dart';
-import 'package:sleepytime/domain/models/series.dart';
-import 'package:sleepytime/domain/models/story_segment.dart';
-import 'package:sleepytime/domain/models/world.dart';
-import 'package:sleepytime/domain/prompt_builder.dart';
-import 'package:sleepytime/domain/story_engine.dart';
+import 'package:moonloom/adapters/ai/ai_provider.dart';
+import 'package:moonloom/adapters/ai/fake_ai_provider.dart';
+import 'package:moonloom/domain/models/beat.dart';
+import 'package:moonloom/domain/models/cast_changes.dart';
+import 'package:moonloom/domain/models/child_profile.dart';
+import 'package:moonloom/domain/models/series.dart';
+import 'package:moonloom/domain/models/story_segment.dart';
+import 'package:moonloom/domain/models/world.dart';
+import 'package:moonloom/domain/prompt_builder.dart';
+import 'package:moonloom/domain/story_engine.dart';
 
 import '../support/in_memory_storage_repo.dart';
 

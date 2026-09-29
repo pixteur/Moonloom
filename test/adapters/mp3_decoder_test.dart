@@ -5,11 +5,11 @@ import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sleepytime/adapters/audio/mp3_decoder.dart';
-import 'package:sleepytime/adapters/audio/mp3_encoder.dart';
-import 'package:sleepytime/adapters/audio/mp3_frame.dart';
-import 'package:sleepytime/adapters/audio/wav.dart';
-import 'package:sleepytime/adapters/tts/tts_synthesizer.dart';
+import 'package:moonloom/adapters/audio/mp3_decoder.dart';
+import 'package:moonloom/adapters/audio/mp3_encoder.dart';
+import 'package:moonloom/adapters/audio/mp3_frame.dart';
+import 'package:moonloom/adapters/audio/wav.dart';
+import 'package:moonloom/adapters/tts/tts_synthesizer.dart';
 
 /// mpglib, through the same DLL as the encoder.
 ///

@@ -82,9 +82,10 @@ class StoryCoverThumb extends ConsumerWidget {
 
   /// Portrait, like a book on a shelf, and sized to sit in a ListTile's
   /// leading slot without stretching the row.
-  static const double _width = 40;
-  static const double _height = 52;
-  static const double _radius = 8;
+  /// Square, so an illustrated story and a plain one occupy the same space
+  /// and the list does not step in and out as you scroll it.
+  static const double _side = 48;
+  static const double _radius = 10;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -95,15 +96,15 @@ class StoryCoverThumb extends ConsumerWidget {
         .lastOrNull;
 
     Widget placeholder() => Container(
-      width: _width,
-      height: _height,
+      width: _side,
+      height: _side,
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(_radius),
       ),
       child: Icon(
         Icons.menu_book_outlined,
-        size: 22,
+        size: 24,
         color: theme.colorScheme.onSurfaceVariant,
       ),
     );
@@ -121,8 +122,10 @@ class StoryCoverThumb extends ConsumerWidget {
           borderRadius: BorderRadius.circular(_radius),
           child: Image.file(
             file,
-            width: _width,
-            height: _height,
+            width: _side,
+            height: _side,
+            // A 3:4 cover filling a square: the middle of the picture, which
+            // is where the characters were asked to stand.
             fit: BoxFit.cover,
           ),
         );

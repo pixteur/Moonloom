@@ -196,7 +196,7 @@ class _StoryChaptersScreenState extends ConsumerState<StoryChaptersScreen> {
             language: lang,
             voiceSignature: tts.voiceSignature,
             mimeType: tts.audioMimeType,
-            author: child?.displayName ?? 'SleepytimeApp',
+            author: child?.displayName ?? 'MoonloomApp',
             alsoTryVoices: _knownVoices,
           );
       if (mounted) showErrorBanner(context, 'Audiobook saved: $path');
@@ -875,7 +875,7 @@ class _DownloadIconState extends State<_DownloadIcon> {
       await widget.onDownload();
     } catch (e) {
       error = e;
-      debugPrint('SleepytimeApp: chapter download error → $e');
+      debugPrint('MoonloomApp: chapter download error → $e');
     }
     await _check();
     if (mounted) setState(() => _busy = false);

@@ -16,10 +16,10 @@ library;
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:sleepytime/adapters/ai/model_catalog.dart';
-import 'package:sleepytime/adapters/ai/provider_exceptions.dart';
-import 'package:sleepytime/adapters/secrets/dpapi.dart';
-import 'package:sleepytime/adapters/secrets/secret_store.dart';
+import 'package:moonloom/adapters/ai/model_catalog.dart';
+import 'package:moonloom/adapters/ai/provider_exceptions.dart';
+import 'package:moonloom/adapters/secrets/dpapi.dart';
+import 'package:moonloom/adapters/secrets/secret_store.dart';
 
 /// Reads the app's SharedPreferences file straight off disk — the plugin needs
 /// Flutter bindings a `dart run` tool doesn't have, but the file is plain JSON.
@@ -29,7 +29,7 @@ class _StoredKeys implements SecretStore {
   static Future<_StoredKeys> open() async {
     final file = File(
       '${Platform.environment['APPDATA']}'
-      r'\com.pixteur\sleepytime\shared_preferences.json',
+      r'\com.pixteur\moonloom\shared_preferences.json',
     );
     if (!file.existsSync()) throw StateError('No prefs at ${file.path}');
     return _StoredKeys(

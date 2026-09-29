@@ -28,6 +28,10 @@ class ChildProfiles extends Table {
   IntColumn get themeColor =>
       integer().withDefault(const Constant(0xFF6750A4))();
   TextColumn get parentBrief => text().nullable()();
+
+  /// A photo of this child, copied into the library and named by its content.
+  /// A path into the camera roll would break the moment the original moved.
+  TextColumn get photoKey => text().withDefault(const Constant(''))();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 
@@ -283,10 +287,10 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 12;
+  int get schemaVersion => 13;
 
   /// The library's file name, under the user's documents folder.
-  static const String fileName = 'sleepytime.sqlite';
+  static const String fileName = 'moonloom.sqlite';
 
   /// Opens the on-device database file. Foreign keys on.
   ///
@@ -415,6 +419,14 @@ class AppDatabase extends _$AppDatabase {
           () => m.addColumn(seriesTable, seriesTable.detailLevel),
         );
       }
+      // v12 → v13: a photo of the child, instead of a letter in a circle.
+      if (from < 13) {
+        await _addColumnIfMissing(
+          'child_profiles',
+          'photo_key',
+          () => m.addColumn(childProfiles, childProfiles.photoKey),
+        );
+      }
     },
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON');
@@ -469,6 +481,11 @@ class AppDatabase extends _$AppDatabase {
         'series',
         'detail_level',
         'INTEGER',
+      );
+      await _ensureColumn(
+        'child_profiles',
+        'photo_key',
+        "TEXT NOT NULL DEFAULT ''",
       );
     },
   );
