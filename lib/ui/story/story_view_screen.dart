@@ -318,7 +318,8 @@ class _StoryViewScreenState extends ConsumerState<StoryViewScreen> {
     if (child == null || series == null) return;
     await _tts.stop();
     setState(() => _busy = true);
-    final engine = ref.read(storyEngineProvider);
+    final engine = await readyStoryEngine(ref);
+    if (!mounted) return;
     Beat beat;
     try {
       beat = await engine.takeTurn(

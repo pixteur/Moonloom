@@ -81,10 +81,15 @@ class _StoryChaptersScreenState extends ConsumerState<StoryChaptersScreen> {
     if (child == null || active == null) return;
     var series = active;
     final repo = ref.read(storageRepoProvider);
-    final engine = ref.read(storyEngineProvider);
-
     if (mounted) setState(() => _building = true);
     try {
+      // Waits for the grown-up's chosen provider to load. Read directly, this
+      // could land before settings did and capture an engine on the fake
+      // provider for the whole story — six canned chapters, no warning, never
+      // named. Inside the try, so a settings read that fails is reported like
+      // any other build failure rather than escaping an unawaited future.
+      final engine = await readyStoryEngine(ref);
+      if (!mounted) return;
       var beats = await repo.loadBeats(series.id);
       var first = true;
       while (_active &&
@@ -424,7 +429,7 @@ class _StoryChaptersScreenState extends ConsumerState<StoryChaptersScreen> {
       final copy = await ref
           .read(seriesServiceProvider)
           .refineIntoNewVersion(
-            engine: ref.read(storyEngineProvider),
+            engine: await readyStoryEngine(ref),
             child: child,
             source: series,
           );

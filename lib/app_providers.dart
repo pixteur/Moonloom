@@ -74,9 +74,21 @@ final aiConfigProvider = NotifierProvider<AiConfigController, ProviderId>(
 );
 
 class AiConfigController extends Notifier<ProviderId> {
+  /// Completes once the grown-up's real choice has been read from settings.
+  ///
+  /// [build] has to answer synchronously, so it answers `fake` and loads the
+  /// real choice behind it. Anything that reads the engine in that window gets
+  /// the fake provider, and the fake provider does not fail — it returns
+  /// canned chapters, successfully. So nothing warns, nothing is named, and a
+  /// story arrives as six identical chapters reading "The gentle path home and
+  /// a peaceful goodnight." The chapter screen captures the engine once and
+  /// keeps it for the whole story, so one early read was enough to fake all
+  /// six. Await this before taking the engine — [readyStoryEngine] does.
+  Future<void> ready = Future.value();
+
   @override
   ProviderId build() {
-    _hydrate();
+    ready = _hydrate();
     return ProviderId.fake;
   }
 
@@ -143,6 +155,19 @@ final aiProvider = Provider<AiProvider>((ref) {
     ProviderId.hosted || ProviderId.fake => const FakeAiProvider(),
   };
 });
+
+/// The story engine, once the provider the grown-up chose has actually loaded.
+///
+/// Use this, not `ref.read(storyEngineProvider)`, anywhere a story is about to
+/// be written. Reading the engine directly can land before settings load and
+/// hand back an engine on the fake provider, which writes canned chapters
+/// without any error — see [AiConfigController.ready].
+Future<StoryEngine> readyStoryEngine(WidgetRef ref) async {
+  // Reading the notifier builds the provider if nothing has yet, which starts
+  // the load; awaiting [ready] waits for it to finish.
+  await ref.read(aiConfigProvider.notifier).ready;
+  return ref.read(storyEngineProvider);
+}
 
 /// The story engine, wired to the active provider + storage.
 final storyEngineProvider = Provider<StoryEngine>(
