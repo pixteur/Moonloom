@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app_providers.dart';
 import '../common/language_choices.dart';
+import '../../domain/cast_line.dart';
 import '../../domain/models/beat.dart';
 import '../../domain/models/child_profile.dart';
 import '../../domain/models/series.dart';
@@ -10,6 +11,7 @@ import '../../domain/models/world.dart';
 import '../../domain/twist_deck.dart';
 import '../story/story_chapters_screen.dart';
 import 'theme_picker.dart';
+import 'world_cast_strip.dart';
 import 'world_voice_picker.dart';
 
 /// How a story handles language, as offered when it is created. Stored on the
@@ -146,6 +148,23 @@ class _NewSeriesScreenState extends ConsumerState<NewSeriesScreen> {
       worldId = _worldChoice;
     }
 
+    // A hero the world already knows is sent under the world's own spelling.
+    // The cast list goes into the prompt verbatim and says these names are
+    // fixed facts, so a hero called "PIP" beside a cast entry for "Pip" reads
+    // as two characters with similar names — which is exactly how a request
+    // for one character came back as a story about another. Tapping a face
+    // avoids this; typing is still allowed, and now lands in the same place.
+    var heroName = _heroName.text.trim();
+    if (worldId != null && heroName.isNotEmpty) {
+      final known = await ref.read(characterServiceProvider).forWorld(worldId);
+      for (final character in known) {
+        if (foldedName(character.name) == foldedName(heroName)) {
+          heroName = character.name;
+          break;
+        }
+      }
+    }
+
     final quiz = await ref.read(storageRepoProvider).latestQuizResult(child.id);
     final series = await ref
         .read(seriesServiceProvider)
@@ -157,9 +176,7 @@ class _NewSeriesScreenState extends ConsumerState<NewSeriesScreen> {
           autoTitle: named.isEmpty,
           worldId: worldId,
           heroMode: _heroMode,
-          heroName: _heroMode == HeroMode.namedHero
-              ? _heroName.text.trim()
-              : null,
+          heroName: _heroMode == HeroMode.namedHero ? heroName : null,
           seedSummary: quiz?.seedSummary ?? '',
           baseLanguage: _baseLanguage.isEmpty ? null : _baseLanguage,
           bilingualEnabled: _language != _LanguageMode.one,
@@ -308,6 +325,31 @@ class _NewSeriesScreenState extends ConsumerState<NewSeriesScreen> {
             ),
           ],
 
+          // Who already lives here, with their faces. The promise above — that
+          // the characters carry over — was never shown, so a grown-up had to
+          // remember the cast and type a name into the box below. That is how
+          // a request for Pip arrived as "PIP" and matched nothing.
+          if (episodeWorld != null) ...[
+            const SizedBox(height: 24),
+            WorldCastStrip(
+              worldId: episodeWorld.id,
+              selected: _heroMode == HeroMode.namedHero ? _heroName.text : '',
+              onPick: (name) => setState(() {
+                if (name == null) {
+                  _heroName.clear();
+                  _heroMode = HeroMode.childAsHero;
+                  return;
+                }
+                // Spelled as the world spells it, never as it was typed: the
+                // cast list is what the prompt carries, and a hero whose name
+                // does not match one of its entries reads to the model as a
+                // new character with a similar name.
+                _heroName.text = name;
+                _heroMode = HeroMode.namedHero;
+              }),
+            ),
+          ],
+
           const SizedBox(height: 24),
           Text('Who is the hero?', style: theme.textTheme.titleMedium),
           const SizedBox(height: 8),
@@ -331,7 +373,16 @@ class _NewSeriesScreenState extends ConsumerState<NewSeriesScreen> {
             TextField(
               controller: _heroName,
               textCapitalization: TextCapitalization.words,
-              decoration: const InputDecoration(labelText: "Hero's name"),
+              decoration: InputDecoration(
+                labelText: "Hero's name",
+                helperText: episodeWorld == null
+                    ? null
+                    : 'Someone new is welcome — they join the world for good',
+              ),
+              // Rebuilt as it is typed so the face above lights up when the
+              // name reaches somebody the world knows, which is the only
+              // signal that the two fields are the same question.
+              onChanged: (_) => setState(() {}),
             ),
           ],
 
