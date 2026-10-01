@@ -3,6 +3,7 @@ import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:image/image.dart' as img;
 import 'package:moonloom/adapters/audio/mp3_encoder.dart';
 import 'package:moonloom/adapters/audio/mp3_frame.dart';
 import 'package:moonloom/adapters/audio/wav.dart';
@@ -80,6 +81,8 @@ void main() {
     required List<List<Uint8List>> chapters,
     int skipped = 0,
     LuniiCoverMotif motif = LuniiCoverMotif.nightSky,
+    String? worldName,
+    Uint8List? coverImage,
   }) => LuniiTransferRequest(
     drive: root,
     backupDirectory: '${temp.path}/backup',
@@ -87,7 +90,29 @@ void main() {
     chapterChunks: chapters,
     skipped: skipped,
     motif: motif,
+    worldName: worldName,
+    coverImage: coverImage,
   );
+
+  /// A drawn picture, as PNG: what the image model hands back. Two colours in
+  /// a shape nothing procedural would make, so "this one reached the device"
+  /// is answerable from the bytes.
+  Uint8List drawnPng({int red = 230}) {
+    final image = img.Image(width: 1024, height: 768);
+    for (var y = 0; y < 768; y++) {
+      for (var x = 0; x < 1024; x++) {
+        image.setPixelRgb(x, y, y < 384 ? red : 20, 60, 140);
+      }
+    }
+    return Uint8List.fromList(img.encodePng(image));
+  }
+
+  /// The one image file in a written pack.
+  Uint8List coverOf(String packName) => File(
+    Directory(
+      '$root/.content/$packName/rf/000',
+    ).listSync().whereType<File>().single.path,
+  ).readAsBytesSync();
 
   setUp(() => temp = Directory.systemTemp.createTempSync('lunii_transfer'));
   tearDown(() {
@@ -267,6 +292,85 @@ void main() {
           ).listSync().whereType<File>().single.path,
         );
         expect(image.readAsBytesSync(), isNot(other.readAsBytesSync()));
+      });
+
+      // Before this, the device picture was seeded on the world's name, so
+      // every episode of one world was the same picture on the shelf. A
+      // picture drawn for *this* story has to win.
+      test('a drawn picture beats the world picture', () {
+        final drawn = buildAndWritePack(
+          request(
+            chapters: [
+              [wavChunk()],
+            ],
+            worldName: "Pip's Adventures",
+            coverImage: drawnPng(),
+          ),
+        );
+        final withPicture = coverOf(drawn.packName);
+
+        makeDevice();
+        final without = buildAndWritePack(
+          request(
+            chapters: [
+              [wavChunk()],
+            ],
+            worldName: "Pip's Adventures",
+          ),
+        );
+        expect(withPicture, isNot(coverOf(without.packName)));
+      });
+
+      test('two stories in one world get two pictures', () {
+        final first = buildAndWritePack(
+          request(
+            chapters: [
+              [wavChunk()],
+            ],
+            worldName: "Pip's Adventures",
+            coverImage: drawnPng(red: 230),
+          ),
+        );
+        final one = coverOf(first.packName);
+
+        makeDevice();
+        final second = buildAndWritePack(
+          request(
+            chapters: [
+              [wavChunk()],
+            ],
+            worldName: "Pip's Adventures",
+            coverImage: drawnPng(red: 40),
+          ),
+        );
+        expect(one, isNot(coverOf(second.packName)));
+      });
+
+      // The fallback is the point of returning null from the reduction rather
+      // than throwing: a picture that will not decode costs a nicer picture,
+      // not a transfer whose audio was all present.
+      test('a picture that will not decode falls back to the world', () {
+        final broken = buildAndWritePack(
+          request(
+            chapters: [
+              [wavChunk()],
+            ],
+            worldName: "Pip's Adventures",
+            coverImage: Uint8List.fromList([137, 80, 78, 71, 1, 2, 3]),
+          ),
+        );
+        final fallback = coverOf(broken.packName);
+
+        makeDevice();
+        final plain = buildAndWritePack(
+          request(
+            chapters: [
+              [wavChunk()],
+            ],
+            worldName: "Pip's Adventures",
+          ),
+        );
+        expect(fallback, coverOf(plain.packName));
       });
 
       test('dead air in a chunk does not reach the device', () {

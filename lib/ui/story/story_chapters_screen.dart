@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,9 +7,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../adapters/ai/provider_exceptions.dart';
 import '../../adapters/lunii/lunii_transfer.dart';
 import '../../app_providers.dart';
+import '../../domain/cast_line.dart';
 import '../../domain/models/beat.dart';
 import '../../domain/models/series.dart';
+import '../../domain/models/story_character.dart';
 import '../../domain/models/story_image.dart';
+import '../../domain/picture_prompt.dart';
 import '../common/hold_to_delete.dart';
 import '../common/language_choices.dart';
 import '../series/story_language_sheet.dart';
@@ -223,12 +227,31 @@ class _StoryChaptersScreenState extends ConsumerState<StoryChaptersScreen> {
       return;
     }
 
-    // An episode wears its world's picture, so there is nothing to choose:
-    // every episode of a world should look like the same place on a shelf of
-    // packs. Only a standalone story gets asked.
+    // An episode of a world has a picture of its own — a portrait of one of
+    // its characters — so there is nothing to choose. Only a standalone story
+    // gets asked which drawn-in-code motif to wear.
+    final repo = ref.read(storageRepoProvider);
     final world = series.worldId == null
         ? null
-        : await ref.read(storageRepoProvider).loadWorldById(series.worldId!);
+        : await repo.loadWorldById(series.worldId!);
+    final beats = world == null
+        ? const <Beat>[]
+        : await repo.loadBeats(series.id);
+    final cast = world == null
+        ? const <StoryCharacter>[]
+        : await repo.loadCharacters(world.id);
+    // Worked out before asking, so the grown-up is told whose face it will be
+    // and whether this costs a picture. The same pure function the service
+    // uses, so what the dialog promises is what gets drawn.
+    final subject = portraitSubject(
+      seriesId: series.id,
+      cast: [for (final c in cast) c.promptLine],
+      beats: beats,
+    );
+    final who = subject == null ? '' : parseCastEntry(subject).$1;
+    final alreadyDrawn = (await repo.loadImages(
+      series.id,
+    )).any((i) => i.kind == StoryImageKind.lunii);
     if (!mounted) return;
 
     final LuniiCoverMotif? motif;
@@ -240,8 +263,9 @@ class _StoryChaptersScreenState extends ConsumerState<StoryChaptersScreen> {
           content: Text(
             '"${series.title}" will be added to the storyteller on '
             '${devices.first}. Nothing already on it is changed.\n\n'
-            'It will show the picture for “${world.name}”, the same as every '
-            'other episode of that world.',
+            '${who.isEmpty ? 'It will show the picture for “${world.name}”.' : 'It will show a portrait of $who, so this episode looks '
+                      'different from the others on the shelf.'
+                      '${alreadyDrawn ? '' : ' Drawing it costs one picture.'}'}',
           ),
           actions: [
             TextButton(
@@ -288,11 +312,32 @@ class _StoryChaptersScreenState extends ConsumerState<StoryChaptersScreen> {
     showErrorBanner(context, 'Sending to the Lunii — this takes a minute…');
     try {
       final child = ref.read(activeChildProvider);
+      // Best effort, like the spoken title: a portrait the image model refuses
+      // or has no key for leaves the pack wearing the world's picture, which
+      // is how every pack written before this behaved. Not a reason to refuse
+      // a transfer whose audio is all present.
+      Uint8List? portrait;
+      if (world != null) {
+        try {
+          final drawn = await ref
+              .read(illustrationServiceProvider)
+              .ensureLuniiPortrait(
+                series: series,
+                beats: beats,
+                world: world,
+                cast: cast,
+              );
+          portrait = drawn?.$2;
+        } catch (_) {
+          portrait = null;
+        }
+      }
       final result = await service.sendToLunii(
         series,
         language: languageFor(series, child?.language),
         voiceSignature: ref.read(ttsProvider).voiceSignature,
         motif: motif,
+        coverImage: portrait,
         drive: devices.first,
         alsoTryVoices: _knownVoices,
         // Lets the cover say the story's name — the device has no screen to

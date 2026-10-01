@@ -20,6 +20,7 @@ import '../audio/mp3_encoder.dart';
 import '../audio/mp3_decoder.dart';
 import '../audio/wav.dart';
 import '../export/cover_image.dart';
+import '../export/lunii_portrait.dart';
 import '../export/world_cover.dart';
 
 import '../tts/audio_compression.dart';
@@ -72,6 +73,7 @@ class LuniiTransferRequest {
     this.titleChunks,
     this.announceChunks,
     this.worldName,
+    this.coverImage,
   });
 
   final String drive;
@@ -98,6 +100,14 @@ class LuniiTransferRequest {
   /// place — and [motif] is only consulted for a standalone story.
   final String? worldName;
   final LuniiCoverMotif motif;
+
+  /// A picture drawn for *this* story, to show instead of the drawn-in-code
+  /// one. Null falls back to the world picture, and that to [motif], so a story
+  /// with no illustrations still reaches the device looking like something.
+  ///
+  /// Whatever the image model handed back — JPEG, in practice, whatever the
+  /// file is named. [luniiImageFromBytes] sniffs it.
+  final Uint8List? coverImage;
 }
 
 /// Build a pack from [request] and install it, off the UI isolate.
@@ -127,13 +137,25 @@ LuniiTransfer buildAndWritePack(LuniiTransferRequest request) {
     );
   }
 
+  // A picture drawn for this story if there is one, reduced to what the screen
+  // can show. The fallbacks matter and are in this order on purpose: a world's
+  // procedural picture at least says *which world*, and the motif at least
+  // says *a story*. Reducing returns null rather than throwing, so a picture
+  // that will not decode costs a nicer picture, not the transfer.
+  final picture = request.coverImage;
   final world = request.worldName?.trim();
-  final cover = world != null && world.isNotEmpty
-      ? worldCoverIndexed(seed: world)
-      : switch (request.motif) {
-          LuniiCoverMotif.velo => veloCoverIndexed(seed: request.title),
-          LuniiCoverMotif.nightSky => nightSkyCoverIndexed(seed: request.title),
-        };
+  final cover =
+      (picture == null || picture.isEmpty
+          ? null
+          : luniiImageFromBytes(picture)) ??
+      (world != null && world.isNotEmpty
+          ? worldCoverIndexed(seed: world)
+          : switch (request.motif) {
+              LuniiCoverMotif.velo => veloCoverIndexed(seed: request.title),
+              LuniiCoverMotif.nightSky => nightSkyCoverIndexed(
+                seed: request.title,
+              ),
+            });
 
   final titleChunks = request.titleChunks;
   final pack = buildDevicePack(

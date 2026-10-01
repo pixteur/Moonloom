@@ -12,6 +12,7 @@
 /// safety property first and a consistency win second.
 library;
 
+import 'cast_line.dart';
 import 'models/beat.dart';
 import 'models/series.dart';
 import 'models/story_image.dart';
@@ -182,12 +183,29 @@ String luniiPicturePrompt(
   Series series,
   Beat opening, {
   List<String> references = const [],
-}) =>
-    '$_flat\n\n'
-    '${referenceClause(references)}'
-    'A scene from a bedtime story: ${_scene(opening)}. '
-    'One or two characters only, large in the frame, against a simple '
-    'background.';
+  String? subject,
+}) {
+  // A portrait, not a scene.
+  //
+  // The device shows one still picture for a whole story, on a screen the size
+  // of a postage stamp, and a child picks a pack by looking at it. A scene
+  // reduced to 320×240 in sixteen colours becomes a smudge with weather in it;
+  // one face, filling the frame, survives — and survives being glanced at
+  // across a room, which is how it is actually used.
+  //
+  // It also gives each story in a world a different picture, which the
+  // procedural cover could never do: that is seeded on the world's name, so
+  // every episode of Pip's Adventures looked identical on the shelf.
+  final who = subject?.trim() ?? '';
+  return '$_flat\n\n'
+      '${referenceClause(references)}'
+      '${who.isEmpty ? 'A portrait of the main character of this bedtime '
+                'story: ${_scene(opening)}' : 'A portrait of $who, a character '
+                'from a bedtime story'}. '
+      'Head and shoulders, facing the viewer, filling most of the frame, '
+      'against a plain background of a single flat colour. Friendly and calm. '
+      'One character only — nobody else in the picture, no scenery, no props.';
+}
 
 /// The prompt for a picture of [kind].
 String picturePromptFor(
@@ -222,6 +240,43 @@ String picturePromptFor(
     styleGuide: styleGuide,
   ),
 };
+
+/// Which character this story's device picture should be a portrait of.
+///
+/// Different story, different face — that is the whole point, since the
+/// procedural cover is seeded on the world's name and gives every episode in a
+/// world the same picture. But **stable** for a given story: re-sending a pack
+/// must not redraw it, or a child's shelf rearranges itself between sends.
+///
+/// Chosen from the characters this story actually mentions, so a portrait is
+/// of somebody who is in it. Falling back to the whole cast when the story
+/// names nobody is deliberate — a face from the right world beats no face.
+String? portraitSubject({
+  required String seriesId,
+  required List<String> cast,
+  required List<Beat> beats,
+}) {
+  if (cast.isEmpty) return null;
+  final mentioned = cast.where((line) {
+    final name = parseCastEntry(line).$1.toLowerCase();
+    if (name.isEmpty) return false;
+    return beats.any(
+      (b) =>
+          b.characters.join(' ').toLowerCase().contains(name) ||
+          b.summary.toLowerCase().contains(name),
+    );
+  }).toList();
+
+  final candidates = mentioned.isEmpty ? cast : mentioned;
+  // FNV-1a over the story's id: stable for this story, and spread across the
+  // cast between stories. A counter would need somewhere to live and would
+  // drift the moment a story was deleted.
+  var hash = 0x811c9dc5;
+  for (final c in seriesId.codeUnits) {
+    hash = ((hash ^ c) * 0x01000193) & 0x7FFFFFFF;
+  }
+  return candidates[hash % candidates.length];
+}
 
 /// Which chapters of a story get a picture.
 ///

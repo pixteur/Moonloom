@@ -164,6 +164,44 @@ indices and an RLE4 run *is* two alternating nibbles, so it costs almost
 nothing to store. The night sky comes to 15.9 kB against 230 kB for the same
 picture at 24-bit, with all sixteen entries in use.
 
+### The picture a story wears
+
+Three producers, tried in this order, each a fallback for the one before:
+
+1. **A portrait drawn for the story.**
+   [lunii_portrait.dart](../lib/adapters/export/lunii_portrait.dart) reduces a
+   picture the image model drew — head and shoulders of one character, against
+   a flat background, asked for in those terms by `luniiPicturePrompt` because
+   a *scene* at 320×240 in sixteen colours is a smudge with weather in it.
+   `IllustrationService.ensureLuniiPortrait` draws it once and keeps it, with
+   that character's reference sheet attached so the device shows the same
+   animal the story does.
+2. **The world's procedural picture**, seeded on the world's name.
+3. **A motif**, for a story that belongs to no world.
+
+Who the portrait is of comes from `portraitSubject`, hashed from the story's
+id over the characters that story actually mentions: different between
+episodes, identical every time for one episode. That is the point of the whole
+arrangement — before it, every episode of a world wore the same picture, so a
+shelf of six Pip stories was six identical packs.
+
+The reduction is crop-then-scale (squeezing a 3:4 cover into 4:3 stretches a
+face), a contrast and saturation lift *before* quantisation, then median cut to
+sixteen colours over the pixels that exist rather than a fixed palette — a sea
+story and a forest story want different sixteen. Measured on five real
+portraits with [tool/lunii_portrait_check.dart](../tool/lunii_portrait_check.dart):
+all sixteen entries used, mean palette distance 5 200–12 000, largest single
+colour 25–47% of the frame, 14–31 kB as RLE4.
+
+**Two traps, both found by running it against the real library rather than
+fixtures.** The first version called `decodePng` — but the image model returns
+**JPEG**, and the picture store names every file `.png` because that is what it
+was written to hold. Every real picture decoded to null, nothing threw, and the
+device silently kept showing the procedural cover. It sniffs the format now.
+The second: a redraw saved a row without removing the stale one, so a story
+ended up with two device pictures and the reader picked one at random — the
+same accumulate-rather-than-replace bug the chapter pictures already had fixed.
+
 ### Audio
 
 From [tool/lunii_audio_survey.dart](../tool/lunii_audio_survey.dart),

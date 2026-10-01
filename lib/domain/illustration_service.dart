@@ -33,6 +33,7 @@ import 'package:uuid/uuid.dart';
 import '../adapters/images/picture_store.dart';
 import '../adapters/images/story_illustrator.dart';
 import '../adapters/storage/storage_repo.dart';
+import 'cast_line.dart';
 import 'models/beat.dart';
 import 'models/series.dart';
 import 'models/story_character.dart';
@@ -295,6 +296,100 @@ class IllustrationService {
       await attempt(beats[index], StoryImageKind.chapter);
     }
     return made;
+  }
+
+  // ── The storyteller's picture ────────────────────────────────────
+
+  /// The portrait the storyteller device shows for this story, drawing one if
+  /// it has none, and its bytes ready to be reduced.
+  ///
+  /// A separate picture from the cover, and worth the extra one: the device has
+  /// a 320×240 screen with sixteen colours, which turns a painted cover into
+  /// mud, and it is the picture a child points at to choose a story. So it is
+  /// drawn flat and bold from the start, and of **one character's face** rather
+  /// than a scene — see [luniiPicturePrompt].
+  ///
+  /// Who it is of varies by story and holds still within one: [portraitSubject]
+  /// picks from the characters that story actually mentions. That is the part
+  /// the procedural cover could not do at all, since it is seeded on the
+  /// world's name and gave every episode the same picture.
+  ///
+  /// Drawn once and kept. Re-sending a pack must not cost another picture, and
+  /// must not change the one on the shelf.
+  Future<(StoryImage, Uint8List)?> ensureLuniiPortrait({
+    required Series series,
+    required List<Beat> beats,
+    World? world,
+    List<StoryCharacter> cast = const [],
+  }) async {
+    if (beats.isEmpty) return null;
+
+    for (final existing in await _repo.loadImages(series.id)) {
+      if (existing.kind != StoryImageKind.lunii) continue;
+      final bytes = await _pictures.read(existing.fileKey);
+      // A row whose file has gone — a cleared cache, a half-restored
+      // backup — is not a picture. Falling through redraws it.
+      if (bytes != null && bytes.isNotEmpty) return (existing, bytes);
+    }
+
+    final sheets = world == null
+        ? const <StoryCharacter>[]
+        : await ensureSheets(world, cast);
+    final subject = portraitSubject(
+      seriesId: series.id,
+      cast: [for (final c in sheets) c.promptLine],
+      beats: beats,
+    );
+    final name = subject == null ? '' : parseCastEntry(subject).$1;
+
+    // The sheet of whoever was picked, as the reference. Without it the model
+    // invents a face, and the device would show a character who appears
+    // nowhere else in the story — the exact drift the sheets exist to stop.
+    final chosen = sheets.firstWhere(
+      (c) => c.name.toLowerCase() == name.toLowerCase(),
+      orElse: () => const StoryCharacter(id: '', worldId: '', name: ''),
+    );
+    final reference = chosen.sheetFileKey.isEmpty
+        ? null
+        : await _pictures.read(chosen.sheetFileKey);
+
+    final prompt = luniiPicturePrompt(
+      series,
+      beats.first,
+      references: reference == null ? const [] : [chosen.name],
+      subject: subject,
+    );
+    final drawn = await _illustrator.draw(
+      prompt,
+      kind: StoryImageKind.lunii,
+      references: reference == null ? const [] : [reference],
+    );
+    final key = 'lunii-${_hash('${series.id}|$prompt')}.png';
+    await _pictures.write(key, drawn.bytes);
+
+    // A story has one device picture, so a redraw replaces rather than
+    // accumulating — the same rule [drawOne] follows, and for the same reason.
+    // Reaching here at all means the rows already present are stale (their
+    // file was gone), and leaving them behind is how the library ended up with
+    // two rows per story the first time this ran.
+    for (final old in await _repo.loadImages(series.id)) {
+      if (old.kind == StoryImageKind.lunii) await _repo.deleteImage(old.id);
+    }
+
+    final image = StoryImage(
+      id: _uuid.v4(),
+      seriesId: series.id,
+      beatId: null,
+      kind: StoryImageKind.lunii,
+      fileKey: key,
+      prompt: drawn.prompt,
+      seed: drawn.seed,
+      model: drawn.model,
+      size: drawn.size,
+      aspect: drawn.aspect,
+    );
+    await _repo.saveImage(image);
+    return (image, drawn.bytes);
   }
 
   /// Which slot a picture of this kind occupies: a cover belongs to the story,

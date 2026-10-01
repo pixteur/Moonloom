@@ -352,6 +352,7 @@ class SleepyService {
     String? drive,
     String? backupDirectory,
     TtsProvider? voice,
+    Uint8List? coverImage,
     List<String> alsoTryVoices = const [],
   }) async {
     final devices = attachedLuniiDevices();
@@ -429,8 +430,11 @@ class SleepyService {
         chapterChunks: chapterChunks,
         titleChunks: titleChunks,
         announceChunks: announceChunks,
-        // An episode wears its world's picture, so a shelf of packs from one
-        // world reads as one place.
+        // A portrait drawn for this story when it has one. The world picture
+        // below is the fallback, not the first choice: it is seeded on the
+        // world's name, so a shelf of episodes from one world was a shelf of
+        // identical pictures.
+        coverImage: coverImage,
         worldName: series.worldId == null
             ? null
             : (await _repo.loadWorldById(series.worldId!))?.name,

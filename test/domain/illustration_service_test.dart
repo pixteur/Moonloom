@@ -237,6 +237,105 @@ void main() {
     });
   });
 
+  group("the storyteller's portrait", () {
+    // A pack gets re-sent — a device wiped, a chapter added. Drawing again
+    // would cost another picture and, worse, change the face on the shelf.
+    test('drawn once and then reused', () async {
+      final beats = [beat('b1', 0), beat('b2', 1)];
+      final first = await service.ensureLuniiPortrait(
+        series: series,
+        beats: beats,
+        world: world,
+      );
+      final drawnSoFar = illustrator.prompts.length;
+
+      final second = await service.ensureLuniiPortrait(
+        series: series,
+        beats: beats,
+        world: world,
+      );
+      expect(illustrator.prompts, hasLength(drawnSoFar));
+      expect(second!.$1.fileKey, first!.$1.fileKey);
+      expect(
+        (await repo.loadImages(
+          's1',
+        )).where((i) => i.kind == StoryImageKind.lunii),
+        hasLength(1),
+      );
+    });
+
+    // A row whose file has gone is not a picture. A cleared cache or a
+    // half-restored backup used to be indistinguishable from a picture that
+    // existed, and the device would have been handed nothing.
+    test('a row whose file has vanished is redrawn', () async {
+      final beats = [beat('b1', 0)];
+      final first = await service.ensureLuniiPortrait(
+        series: series,
+        beats: beats,
+        world: world,
+      );
+      pictures.files.remove(first!.$1.fileKey);
+
+      final second = await service.ensureLuniiPortrait(
+        series: series,
+        beats: beats,
+        world: world,
+      );
+      expect(second, isNotNull);
+      expect(pictures.files, contains(second!.$1.fileKey));
+      // And the stale row goes with it. It did not, the first time: a dry run
+      // and then a real one left the real library with two rows per story,
+      // which is the same accumulate-rather-than-replace bug the chapter
+      // pictures already had fixed.
+      expect(
+        (await repo.loadImages(
+          's1',
+        )).where((i) => i.kind == StoryImageKind.lunii),
+        hasLength(1),
+      );
+    });
+
+    test("carries the chosen character's sheet as the reference", () async {
+      const pip = StoryCharacter(id: 'ch1', worldId: 'w1', name: 'Pip');
+      await repo.saveCharacter(pip);
+      final drawn = await service.ensureLuniiPortrait(
+        series: series,
+        beats: [beat('b1', 0, characters: 'Pip')],
+        world: world,
+        cast: const [pip],
+      );
+      expect(drawn, isNotNull);
+      expect(
+        illustrator.referenceCounts.last,
+        1,
+        reason: 'the device must show the same Pip as the story',
+      );
+      expect(illustrator.prompts.last, contains('A portrait of Pip'));
+    });
+
+    test('a world with no cast still gets a picture', () async {
+      final drawn = await service.ensureLuniiPortrait(
+        series: series,
+        beats: [beat('b1', 0)],
+        world: world,
+      );
+      expect(drawn, isNotNull);
+      expect(illustrator.prompts.last, contains('A portrait'));
+      expect(illustrator.referenceCounts.last, 0);
+    });
+
+    test('an empty story has nothing to draw', () async {
+      expect(
+        await service.ensureLuniiPortrait(
+          series: series,
+          beats: const [],
+          world: world,
+        ),
+        isNull,
+      );
+    });
+  });
+
   test('one picture failing does not abandon the rest', () async {
     illustrator.failuresLeft = 1; // the cover
     final reported = <String>[];

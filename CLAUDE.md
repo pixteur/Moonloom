@@ -166,6 +166,13 @@ voice this device has used. Playback is the exception: a story is read in the
 voice that was chosen. `tool/narration_voices.dart` shows which voice actually
 holds each story.
 
+**The image model returns JPEG, and every picture file is named `.png`.**
+The store names files for what it was written to hold; the model sends what it
+likes. A reducer built on `decodePng` therefore returned null for every real
+picture in the library — no throw, no log, the Lunii just kept showing the old
+procedural cover. Sniff the format (`img.decodeImage`), never assume it from
+the name. Fixtures cannot catch this: a test writes the PNG it then reads.
+
 **Verify against the real database or device, not just tests.** Both the
 migration bug and the download-badge bug passed every test and failed
 immediately in the app. `tool/` holds read-only probes for exactly this.
@@ -190,7 +197,9 @@ Beyond the phase docs, these are live and verified on hardware:
   share menu. The device navigates by ear, so the cover speaks the story's
   title — sound 0, which shifts every chapter along one. A spoken chapter menu
   is the next thing it needs, and wants a `lunii_node_survey` against an
-  attached device first rather than a guess at the shape.
+  attached device first rather than a guess at the shape. Each story now wears
+  a portrait of one of its own characters rather than its world's picture, so
+  a shelf of episodes is no longer six identical packs.
   [docs/lunii-sync.md](docs/lunii-sync.md)
 - **Deferred** — [docs/plan-competing-llms.md](docs/plan-competing-llms.md)
 
@@ -202,7 +211,10 @@ it should), `db_schema` / `columns_check` (what the on-disk database actually
 has), `refine_diff` and `cue_report`.
 
 `lunii_node_survey` reports how the packs on a device wire their story graphs;
-`audio_cache_audit` finds cached narration a voice provider got wrong.
+`audio_cache_audit` finds cached narration a voice provider got wrong;
+`lunii_portrait_check` draws real portraits and reduces them to the device's
+screen, writing both sizes out to look at — whether a face is readable at
+320×240 in sixteen colours is not something an assertion can judge.
 
 Three `tool/` scripts do write: `lunii_write` (dry run unless `--write`),
 `lunii_remove_orphan` (refuses anything `.pi` lists) and `audio_cache_audit`
