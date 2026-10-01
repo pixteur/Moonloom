@@ -275,6 +275,11 @@ class _NewSeriesScreenState extends ConsumerState<NewSeriesScreen> {
             Text('Save to…', style: theme.textTheme.titleMedium),
             const SizedBox(height: 8),
             DropdownButtonFormField<String?>(
+              // Fills the width it is given and ellipsizes, rather than sizing to
+              // its longest label. "Same as the child (English)" is wider than a
+              // phone-shaped window, and a debug build paints the overflow as
+              // yellow-and-black stripes across the control.
+              isExpanded: true,
               initialValue: _worldChoice,
               decoration: const InputDecoration(border: OutlineInputBorder()),
               items: [
@@ -432,6 +437,11 @@ class _NewSeriesScreenState extends ConsumerState<NewSeriesScreen> {
           Text('Languages', style: theme.textTheme.titleMedium),
           const SizedBox(height: 8),
           DropdownButtonFormField<String>(
+            // Fills the width it is given and ellipsizes, rather than sizing to
+            // its longest label. "Same as the child (English)" is wider than a
+            // phone-shaped window, and a debug build paints the overflow as
+            // yellow-and-black stripes across the control.
+            isExpanded: true,
             initialValue: _baseLanguage,
             decoration: const InputDecoration(
               labelText: 'Told in',
@@ -484,6 +494,11 @@ class _NewSeriesScreenState extends ConsumerState<NewSeriesScreen> {
           if (_language != _LanguageMode.one) ...[
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
+              // Fills the width it is given and ellipsizes, rather than sizing to
+              // its longest label. "Same as the child (English)" is wider than a
+              // phone-shaped window, and a debug build paints the overflow as
+              // yellow-and-black stripes across the control.
+              isExpanded: true,
               initialValue: _secondLanguage,
               decoration: const InputDecoration(
                 labelText: 'Second language',

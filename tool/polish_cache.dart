@@ -23,9 +23,23 @@ import 'dart:typed_data';
 import 'package:moonloom/adapters/tts/audio_compression.dart';
 import 'package:moonloom/adapters/tts/audio_polish.dart';
 
+/// Where the narration the app actually plays lives.
+///
+/// **The library first, and the old app-support folders only after it.** There
+/// are two caches on this machine: `Documents\Moonloom\audio`, which is what
+/// `LibraryPaths.audio()` resolves to and what playback reads and writes, and
+/// an older `AppData\...\audio_cache` that `FileAudioCache` migrates from. The
+/// old one still holds files, so a tool that checked it first found a cache,
+/// stopped, and reported on audio nothing has played in months — which is how
+/// this very script nearly rewrote the wrong 42 files while the 795 the app
+/// reads sat untouched.
 Directory _cacheDir() {
   final appData = Platform.environment['APPDATA'];
   for (final candidate in [
+    Directory(
+      '${Platform.environment['USERPROFILE']}'
+      r'\Documents\Moonloom\audio',
+    ),
     Directory('$appData\\com.pixteur\\moonloom\\audio_cache'),
     Directory('$appData\\com.pixteur\\moonloom\\library\\audio_cache'),
   ]) {

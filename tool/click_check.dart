@@ -29,16 +29,23 @@ const int _clickThreshold = 2000;
 /// the waveform a long way legitimately; silence cannot.
 const double _quietFloor = 0.02;
 
+/// Where the narration the app actually plays lives.
+///
+/// The library first. There are two caches on this machine — the library's
+/// `Documents\Moonloom\audio`, which playback reads and writes, and an older
+/// app-support folder `FileAudioCache` migrates from — and the old one still
+/// holds files. Checking it first meant measuring audio nothing has played in
+/// months and calling it the state of the cache.
 Directory _cacheDir() {
   final appData = Platform.environment['APPDATA'];
   for (final candidate in [
     Directory(
-      '$appData'
-      r'\com.pixteur\Moonloom\audio_cache',
-    ),
-    Directory(
       '${Platform.environment['USERPROFILE']}'
       r'\Documents\Moonloom\audio',
+    ),
+    Directory(
+      '$appData'
+      r'\com.pixteur\Moonloom\audio_cache',
     ),
   ]) {
     if (candidate.existsSync()) return candidate;
