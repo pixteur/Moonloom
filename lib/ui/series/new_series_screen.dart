@@ -227,6 +227,15 @@ class _NewSeriesScreenState extends ConsumerState<NewSeriesScreen> {
     final worlds =
         ref.watch(worldsForChildProvider(child?.id ?? '')).asData?.value ??
         const <World>[];
+    // The world this story will belong to, however it was chosen.
+    final castWorld =
+        episodeWorld ??
+        (_worldChoice == null || _worldChoice == 'new'
+            ? null
+            : worlds.cast<World?>().firstWhere(
+                (w) => w!.id == _worldChoice,
+                orElse: () => null,
+              ));
 
     return Scaffold(
       appBar: AppBar(
@@ -329,10 +338,15 @@ class _NewSeriesScreenState extends ConsumerState<NewSeriesScreen> {
           // the characters carry over — was never shown, so a grown-up had to
           // remember the cast and type a name into the box below. That is how
           // a request for Pip arrived as "PIP" and matched nothing.
-          if (episodeWorld != null) ...[
+          //
+          // Shown for a world chosen from "Save to…" as well as for one
+          // arrived at through "New episode": the characters carry over just
+          // the same, and a screen that said so in one place and not the other
+          // would be describing the app rather than what it does.
+          if (castWorld != null) ...[
             const SizedBox(height: 24),
             WorldCastStrip(
-              worldId: episodeWorld.id,
+              worldId: castWorld.id,
               selected: _heroMode == HeroMode.namedHero ? _heroName.text : '',
               onPick: (name) => setState(() {
                 if (name == null) {
