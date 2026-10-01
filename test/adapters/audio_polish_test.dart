@@ -37,6 +37,15 @@ List<int> _speech(int samples, double amplitude, {int seed = 1}) {
 
 List<int> _silence(int samples) => List.filled(samples, 0);
 
+/// The samples back out of a WAV, for looking at the waveform itself.
+List<int> _samplesOf(Uint8List w) {
+  final view = ByteData.sublistView(w);
+  return [
+    for (var i = 0; i < (w.length - 44) ~/ 2; i++)
+      view.getInt16(44 + i * 2, Endian.little),
+  ];
+}
+
 int _sampleCount(Uint8List w) => (w.length - 44) ~/ 2;
 double _seconds(Uint8List w) => _sampleCount(w) / 24000;
 
@@ -62,14 +71,71 @@ void main() {
       },
     );
 
-    test('one unbroken run of speech has nothing to fix', () {
+    // It no longer comes back as the same object: a single unbroken run has no
+    // seams to even out and no breaks to lengthen, but it can still carry the
+    // steps the voice model leaves in its own output, so it is de-clicked like
+    // anything else. What must not change is the audio itself.
+    test('one unbroken run of clean speech comes back unchanged', () {
       final one = wav(_speech(24000, 0.3));
-      expect(polishNarration(one), same(one));
+      expect(polishNarration(one), equals(one));
     });
 
     test('something too short to be a WAV does not throw', () {
       final stub = Uint8List.fromList([0x52, 0x49, 0x46, 0x46]);
       expect(polishNarration(stub), same(stub));
+    });
+  });
+
+  // The complaint that outlived two attempts at fixing it: a pop of static at
+  // the end of a paragraph, with Gemini voices. It is not drift and not the
+  // splice — twenty real cached chapters carry forty-six places where the
+  // waveform jumps thousands of units between two adjacent samples next to
+  // silence, in the audio exactly as the model returned it. Levelling cannot
+  // help; it multiplies them along with everything else.
+  group('the clicks the model leaves behind', () {
+    /// The worst jump between adjacent samples that sits next to silence.
+    int worstStep(Uint8List file) {
+      final s = _samplesOf(file);
+      var worst = 0;
+      for (var i = 1; i < s.length; i++) {
+        final jump = (s[i] - s[i - 1]).abs();
+        if (jump < 2000) continue;
+        var before = 0;
+        var after = 0;
+        for (var j = max(0, i - 240); j < i; j++) {
+          before = max(before, s[j].abs());
+        }
+        for (var j = i; j < min(s.length, i + 240); j++) {
+          after = max(after, s[j].abs());
+        }
+        if (before > 655 && after > 655) continue; // both sides loud
+        worst = max(worst, jump);
+      }
+      return worst;
+    }
+
+    test('a step out of silence is smoothed away', () {
+      final samples = _speech(24000, 1.0);
+      // Silence, then an instant jump to a loud sample: the shape of the pop.
+      for (var i = 12000; i < 12600; i++) {
+        samples[i] = 0;
+      }
+      samples[12600] = 9000;
+      final before = wav(samples);
+      expect(worstStep(before), greaterThan(2000), reason: 'the fixture ticks');
+      expect(worstStep(polishNarration(before)), 0);
+    });
+
+    test('a loud consonant is not flattened', () {
+      // The same size of jump, but with speech either side of it, which is a
+      // transient rather than a click. Smoothing those would be a lisp.
+      final samples = _speech(24000, 1.0);
+      for (var i = 0; i < samples.length; i++) {
+        samples[i] = (samples[i].abs() + 6000).clamp(-32768, 32767);
+      }
+      samples[12000] = -9000;
+      final polished = polishNarration(wav(samples));
+      expect(_samplesOf(polished).length, samples.length);
     });
   });
 

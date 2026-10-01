@@ -134,6 +134,47 @@ Future<void> main(List<String> args) async {
     }
   }
 
+  // Where a chunk begins and ends.
+  //
+  // Playback plays each chunk as its own clip, one after another, so every
+  // chunk boundary is a place the waveform can jump. A clip that ends at a
+  // sample far from zero steps straight to silence, and the ear hears that
+  // step as a tick or a burst of static — at the end of a paragraph, which is
+  // exactly where it keeps being reported. Nothing in the polish touches a
+  // clip's own edges: it fades the silence it inserts, and leaves the first
+  // and last sample of the clip as the model left them. So this measures them.
+  stdout.writeln('\nedges              first    last   peak in last 20ms');
+  var abrupt = 0;
+  var seen = 0;
+  for (final file in files.take(20)) {
+    Uint8List wav;
+    try {
+      wav = decompressAudio(file.readAsBytesSync());
+    } catch (_) {
+      continue;
+    }
+    if (!_isPcmWav(wav)) continue;
+    final s = _samples(polishNarration(wav));
+    if (s.isEmpty) continue;
+    seen++;
+    var peak = 0;
+    for (var i = max(0, s.length - 480); i < s.length; i++) {
+      peak = max(peak, s[i].abs());
+    }
+    // A quarter of the click threshold: a step this big out of silence is
+    // audible, and a clip ending here has nowhere to go but zero.
+    if (s.last.abs() > _clickThreshold ~/ 4) abrupt++;
+    stdout.writeln(
+      '${file.uri.pathSegments.last.padRight(20)}'
+      '${s.first.abs().toString().padLeft(6)}'
+      '${s.last.abs().toString().padLeft(8)}'
+      '${peak.toString().padLeft(20)}',
+    );
+  }
+  stdout.writeln(
+    '\n$abrupt of $seen clips end on a sample far enough from zero to tick.',
+  );
+
   if (looked == 0) {
     stdout.writeln('\nNo readable WAV narration in the cache.');
     return;

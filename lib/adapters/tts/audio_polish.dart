@@ -79,14 +79,99 @@ Uint8List polishNarration(Uint8List wav) {
   }
 
   final perChannel = rate * channels;
+
+  // The model's own clicks, before anything else is done.
+  //
+  // Measured on the real cache: twenty Gemini chapters carry forty-six steps
+  // where the waveform jumps thousands of units between two adjacent samples,
+  // next to silence. That is not drift and not a splice — it is in the audio
+  // as the model returned it, and it is what is heard as a pop of static at
+  // the end of a paragraph. The level correction cannot help; it multiplies
+  // them along with everything else, which is why the first attempt at this
+  // made the complaint worse rather than better.
+  _deClick(samples, perChannel);
+
   final segments = _findSegments(samples, perChannel);
   // One unbroken run of speech has no seams to even out and no breaks to
-  // lengthen; leave it exactly as the model sang it.
-  if (segments.length < 2) return wav;
+  // lengthen; leave it exactly as the model sang it — but it has still been
+  // de-clicked above, because a single run can tick just as loudly.
+  if (segments.length < 2) {
+    return _wrap(Uint8List.sublistView(samples), wav);
+  }
 
   final gain = _driftGain(samples, perChannel);
   final out = _rebuild(samples, segments, gain, perChannel);
-  return _wrap(out, wav);
+  // And again on the finished audio. The level correction multiplies whatever
+  // is under it, so a step too small to repair before the gain can be loud
+  // enough to hear after it — measured, not supposed: the first pass alone
+  // took forty-six steps down to twenty-seven.
+  _deClick(out, perChannel);
+  return _wrap(Uint8List.fromList(out.expand(_le16).toList()), wav);
+}
+
+/// A jump bigger than this between two adjacent samples is a step, not speech.
+///
+/// Speech moves fast, but not this fast at 24 kHz — and never out of a silence,
+/// which is where these are. The same threshold `tool/click_check.dart` counts
+/// with, so the tool and the fix are talking about the same thing.
+const int _clickJump = 2000;
+
+/// Loud enough on both sides and the jump is a consonant, not a click.
+const double _clickQuiet = 0.02;
+
+/// How long to spread a step over. Six milliseconds is far too short to hear
+/// as a slur and far too long to hear as a tick.
+const int _repairMs = 3;
+
+/// Smooth the steps the voice model leaves in its own output.
+///
+/// Each one is repaired by replacing a few milliseconds either side with a
+/// straight line between the samples that bound it, which turns an instant
+/// jump into a ramp. Only where one side is near-silent: a loud consonant may
+/// legitimately move the waveform a long way, and flattening those would be
+/// audible as a lisp.
+///
+/// In place, because the caller owns these samples and a copy of a chapter is
+/// several megabytes.
+void _deClick(Int16List s, int perSecond) {
+  final half = max(1, perSecond * _repairMs ~/ 1000);
+  var i = 1;
+  while (i < s.length) {
+    if ((s[i] - s[i - 1]).abs() < _clickJump) {
+      i++;
+      continue;
+    }
+    // Quiet on one side of the jump is what makes it a click rather than a
+    // transient: a step out of, or into, near-silence.
+    if (_peakNear(s, i - perSecond ~/ 100, i) > _clickQuiet &&
+        _peakNear(s, i, i + perSecond ~/ 100) > _clickQuiet) {
+      i++;
+      continue;
+    }
+    final from = max(0, i - half);
+    final to = min(s.length - 1, i + half);
+    if (to <= from) {
+      i++;
+      continue;
+    }
+    final a = s[from];
+    final b = s[to];
+    for (var j = from + 1; j < to; j++) {
+      s[j] = (a + (b - a) * (j - from) / (to - from)).round();
+    }
+    // Past the span just rewritten, so one step is not repaired repeatedly.
+    i = to + 1;
+  }
+}
+
+/// The loudest sample in a span, as a fraction of full scale.
+double _peakNear(Int16List s, int from, int to) {
+  var peak = 0;
+  for (var i = max(0, from); i < min(to, s.length); i++) {
+    final v = s[i].abs();
+    if (v > peak) peak = v;
+  }
+  return peak / 32768.0;
 }
 
 bool _isPcmWav(Uint8List b) =>
@@ -234,7 +319,7 @@ double _speechRms(Int16List s, int from, int to) {
 }
 
 /// Apply the drift gain and stretch the paragraph gaps, writing a fresh body.
-Uint8List _rebuild(
+Int16List _rebuild(
   Int16List s,
   List<_Segment> segments,
   List<double> gain,
@@ -315,7 +400,7 @@ Uint8List _rebuild(
   for (var j = segments.last.end; j < s.length; j++) {
     out.add((s[j] * gainAt(j)).round().clamp(-32768, 32767));
   }
-  return Uint8List.fromList(out.expand(_le16).toList());
+  return Int16List.fromList(out);
 }
 
 Iterable<int> _le16(int sample) sync* {
