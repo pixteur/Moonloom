@@ -176,9 +176,45 @@ List<double> _driftGain(Int16List s, int perSecond) {
 
   final ceiling = pow(10, _maxDriftDb / 20).toDouble();
   return [
-    for (final band in smooth)
-      band <= 0 ? 1.0 : (target / band).clamp(1 / ceiling, ceiling),
+    for (var i = 0; i < smooth.length; i++)
+      _headroomLimited(
+        s,
+        i,
+        window,
+        smooth[i] <= 0 ? 1.0 : (target / smooth[i]).clamp(1 / ceiling, ceiling),
+      ),
   ];
+}
+
+/// The loudest a sample may become. Just under full scale, so rounding cannot
+/// land on the rail either.
+const double _ceilingSample = 32000;
+
+/// The gain for a band, reduced until nothing in it can clip.
+///
+/// This is the bug that made the polish worse than the thing it fixed. A
+/// bedtime narration is not quiet — several cached chapters already peaked at
+/// 32767 — so lifting a band by up to 4 dB pushed samples past full scale,
+/// where the clamp flattened them. Measured on the real cache: every polished
+/// file hit the rail, one of them on 1 260 samples where the original hit it
+/// on four. Flattened peaks are hard clipping, and hard clipping is heard as
+/// a pop of static — which is exactly where it was reported, at the end of
+/// paragraphs, and in the Lunii navigation that encodes the same audio.
+///
+/// The peak is taken over the band **and its neighbours**, because the gain is
+/// interpolated between band centres: a loud sample near a boundary can
+/// otherwise be multiplied by the quieter neighbour's larger gain.
+double _headroomLimited(Int16List s, int band, int window, double wanted) {
+  if (wanted <= 1) return wanted;
+  final from = max(0, (band - 1) * window);
+  final to = min(s.length, (band + 2) * window);
+  var peak = 0;
+  for (var i = from; i < to; i++) {
+    final v = s[i].abs();
+    if (v > peak) peak = v;
+  }
+  if (peak == 0) return wanted;
+  return min(wanted, _ceilingSample / peak);
 }
 
 /// RMS of the parts of a span that are actually speech.
@@ -220,25 +256,58 @@ Uint8List _rebuild(
     return gain[lo] + (gain[hi] - gain[lo]) * t;
   }
 
+  /// One sample of the original, with the drift gain applied.
+  int gained(int i) =>
+      (s[min(i, s.length - 1)] * gainAt(i)).round().clamp(-32768, 32767);
+
+  /// How long to cross into and out of inserted silence. Twelve milliseconds
+  /// is long enough that no step remains and short enough to be inaudible as
+  /// a fade — it reads as the room going quiet, not as a level moving.
+  final fadeLength = max(1, perSecond * 12 ~/ 1000);
+
   for (var i = 0; i < segments.length; i++) {
     final seg = segments[i];
     for (var j = seg.start; j < seg.end && j < s.length; j++) {
-      out.add((s[j] * gainAt(j)).round().clamp(-32768, 32767));
+      out.add(gained(j));
     }
 
     if (i == segments.length - 1) break;
-    // The silence between this segment and the next: keep it, and lengthen it
-    // when it is long enough to be a paragraph rather than a sentence.
     final gap = segments[i + 1].start - seg.end;
     final keep = gap >= paragraphGap ? max(gap, targetGap) : gap;
-    for (var j = 0; j < keep; j++) {
-      out.add(
-        j < gap
-            ? (s[min(seg.end + j, s.length - 1)] * gainAt(seg.end + j))
-                  .round()
-                  .clamp(-32768, 32767)
-            : 0,
-      );
+    final extra = keep - gap;
+
+    if (extra <= 0) {
+      for (var j = 0; j < gap; j++) {
+        out.add(gained(seg.end + j));
+      }
+      continue;
+    }
+
+    // Lengthening a gap means splicing silence into it, and the splice is
+    // where the click came from. A model's "silence" is not digital zero — it
+    // is room tone a few hundred units off the line — so writing a run of
+    // exact zeros next to it steps the waveform instantly, twice per gap, and
+    // a step is a click. It was audible at the end of every paragraph and in
+    // the Lunii navigation, which encodes the same audio.
+    //
+    // So the silence goes in the MIDDLE of the gap, faded into and out of, and
+    // the real room tone stays touching the speech on both sides. Nothing
+    // steps, and the pause still lands where the ear expects it.
+    final half = gap ~/ 2;
+    final fade = min(fadeLength, half);
+
+    for (var j = 0; j < half; j++) {
+      final value = gained(seg.end + j);
+      final toEnd = half - j;
+      out.add(toEnd <= fade ? (value * toEnd / fade).round() : value);
+    }
+    for (var j = 0; j < extra; j++) {
+      out.add(0);
+    }
+    for (var j = half; j < gap; j++) {
+      final value = gained(seg.end + j);
+      final fromStart = j - half;
+      out.add(fromStart < fade ? (value * fromStart / fade).round() : value);
     }
   }
 

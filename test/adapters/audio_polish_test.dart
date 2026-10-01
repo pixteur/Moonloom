@@ -163,4 +163,166 @@ void main() {
     expect(view.getUint32(4, Endian.little), after.length - 8);
     expect(view.getUint16(34, Endian.little), 16);
   });
+
+  group('the splice does not click', () {
+    // A pop was audible at the end of every paragraph, and in the Lunii
+    // navigation which encodes the same audio. The cause: a model's "silence"
+    // is room tone a few hundred units off the line, and the lengthened gap
+    // was filled with exact zeros — so the waveform stepped instantly, twice
+    // per gap, and a step is a click however quiet its surroundings.
+    const rate = 24000;
+
+    /// Room tone: quiet enough that the gap detector calls it silence, but
+    /// nowhere near digital zero — which is the whole point. Real TTS output
+    /// sits here, and filling a gap with exact zeros beside it steps.
+    List<int> roomTone(int samples, {int level = 70, int seed = 3}) {
+      final rng = Random(seed);
+      return [for (var i = 0; i < samples; i++) level + rng.nextInt(60) - 30];
+    }
+
+    test('a lengthened gap never steps', () {
+      final source = [
+        ..._speech(rate, 0.3),
+        ...roomTone(rate ~/ 2), // 500 ms of room tone, not zeros
+        ..._speech(rate, 0.3, seed: 2),
+      ];
+      final after = polishNarration(wav(source));
+
+      // The gap was lengthened — that is the feature working.
+      expect(_seconds(after), greaterThan(_seconds(wav(source))));
+
+      // Measured inside the pause, which is the only place a splice can be.
+      // Comparing whole-file peaks instead catches the gain scaling speech's
+      // own transients by a few units and says nothing about the splice.
+      final view = ByteData.sublistView(after);
+      final count = (after.length - 44) ~/ 2;
+      var worstInGap = 0;
+      for (var i = rate + 1; i < count - rate; i++) {
+        final a = view.getInt16(44 + (i - 1) * 2, Endian.little);
+        final b = view.getInt16(44 + i * 2, Endian.little);
+        worstInGap = max(worstInGap, (b - a).abs());
+      }
+      // Room tone wanders by a few tens of units. A splice onto digital zero
+      // would show as a step of the tone's whole level at once.
+      expect(
+        worstInGap,
+        lessThan(60),
+        reason: 'the pause must not step; that step is the click',
+      );
+    });
+
+    test('room tone still touches the speech on both sides', () {
+      // The silence goes in the middle of the gap, so the real room tone
+      // stays adjacent to the words. Filling from the end instead would put
+      // digital zero right against a word's last breath.
+      final source = [
+        ..._speech(rate, 0.3),
+        ...roomTone(rate ~/ 2),
+        ..._speech(rate, 0.3, seed: 2),
+      ];
+      final after = polishNarration(wav(source));
+      final view = ByteData.sublistView(after);
+      final count = (after.length - 44) ~/ 2;
+
+      // Just after the first speech run ends there must still be tone, not a
+      // run of zeros.
+      var nonZeroJustAfterSpeech = 0;
+      for (var i = rate + 10; i < rate + 2000 && i < count; i++) {
+        if (view.getInt16(44 + i * 2, Endian.little) != 0) {
+          nonZeroJustAfterSpeech++;
+        }
+      }
+      expect(nonZeroJustAfterSpeech, greaterThan(100));
+    });
+
+    test('a gap too short to lengthen is left exactly alone', () {
+      final source = [
+        ..._speech(rate, 0.3),
+        ...roomTone(rate ~/ 5), // 200 ms — a sentence break
+        ..._speech(rate, 0.3, seed: 2),
+      ];
+      final before = wav(source);
+      final after = polishNarration(before);
+      expect(_seconds(after), closeTo(_seconds(before), 0.01));
+    });
+  });
+
+  group('nothing is pushed past full scale', () {
+    // The bug that made the polish worse than what it fixed. A bedtime
+    // narration is not quiet — several cached chapters already peaked at
+    // 32767 — so lifting a band by up to 4 dB ran samples into the clamp.
+    // Measured on the real cache: every polished file hit the rail, one of
+    // them on 1 260 samples where the original hit it on four. Flattened
+    // peaks are hard clipping, and hard clipping is the pop of static that
+    // was reported at the end of paragraphs.
+    const rate = 24000;
+
+    int atCeiling(Uint8List w) {
+      final view = ByteData.sublistView(w);
+      final count = (w.length - 44) ~/ 2;
+      var hits = 0;
+      for (var i = 0; i < count; i++) {
+        if (view.getInt16(44 + i * 2, Endian.little).abs() >= 32760) hits++;
+      }
+      return hits;
+    }
+
+    int peakOf(Uint8List w) {
+      final view = ByteData.sublistView(w);
+      final count = (w.length - 44) ~/ 2;
+      var peak = 0;
+      for (var i = 0; i < count; i++) {
+        peak = max(peak, view.getInt16(44 + i * 2, Endian.little).abs());
+      }
+      return peak;
+    }
+
+    /// Quiet first, loud and already peaking after — exactly the shape that
+    /// makes the drift correction want to raise the loud half.
+    Uint8List risingToTheRail() {
+      final source = <int>[];
+      for (var b = 0; b < 6; b++) {
+        source.addAll(_speech(rate * 8, b < 3 ? 0.2 : 0.99, seed: b));
+        source.addAll(_silence(rate ~/ 2));
+      }
+      return wav(source);
+    }
+
+    test('audio already at the rail is not lifted into it', () {
+      final before = risingToTheRail();
+      expect(
+        atCeiling(polishNarration(before)),
+        lessThanOrEqualTo(atCeiling(before)),
+      );
+    });
+
+    test('a quiet passage is still lifted', () {
+      // The headroom limit must not quietly become a refusal to do anything.
+      final source = <int>[];
+      for (var b = 0; b < 6; b++) {
+        source.addAll(_speech(rate * 8, b < 3 ? 0.05 : 0.2, seed: b));
+        source.addAll(_silence(rate ~/ 2));
+      }
+      final peak = peakOf(polishNarration(wav(source)));
+      expect(peak, greaterThan(0.05 * 32767));
+      expect(peak, lessThan(32760));
+    });
+  });
+
+  test('running it twice changes nothing more', () {
+    const rate = 24000;
+    final once = polishNarration(
+      wav([
+        ..._speech(rate, 0.3),
+        ..._silence(rate ~/ 2),
+        ..._speech(rate, 0.3, seed: 2),
+      ]),
+    );
+    expect(polishNarration(once).length, once.length);
+  });
+
+  test('an empty chapter does not throw', () {
+    expect(polishNarration(Uint8List(0)).length, 0);
+    expect(polishNarration(wav(const [])).length, 44);
+  });
 }
