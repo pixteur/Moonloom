@@ -45,7 +45,7 @@ Future<void> main(List<String> args) async {
         continue;
       }
       final known = await repo.loadCharacters(world.id);
-      final seen = {for (final c in known) c.name.toLowerCase()};
+      final seen = {for (final c in known) foldedName(c.name)};
       // Oldest first: whoever the first story met is who they are.
       final episodes = (await repo.loadSeries(
         child.id,
@@ -53,23 +53,44 @@ Future<void> main(List<String> args) async {
       // Keyed case-insensitively: "Bébé hibou" and "bébé hibou" are one owl.
       final found = <String, String>{};
       final canonical = <String, String>{};
+      // Per character, whether any chapter wrote their name as a name rather
+      // than as a description of them.
+      final readsAsName = <String, bool>{};
       for (final episode in episodes) {
         for (final beat in await repo.loadBeats(episode.id)) {
           for (final entry in beat.characters) {
             final (name, description) = parseCastEntry(entry);
             if (name.isEmpty) continue;
-            final key = name.toLowerCase();
-            if (seen.contains(key)) continue;
-            canonical.putIfAbsent(key, () => name);
+            final key = foldedName(name);
+            if (key.isEmpty || seen.contains(key)) continue;
+
+            // Whether this is a character is decided per *character*, not per
+            // spelling. Chapters disagree about capitals — "Blue Tangs" in one
+            // and "Blue tangs (fish)" in the next — and testing each spelling
+            // on its own threw away the only mention that said what they were
+            // while keeping the one that did not. So every spelling is
+            // gathered, and the question is asked once at the end.
+            readsAsName[key] =
+                (readsAsName[key] ?? false) || !isDescriptionNotName(name);
+            // The best-capitalised spelling is the one worth saving.
+            final best = canonical[key];
+            if (best == null ||
+                (isDescriptionNotName(best) && !isDescriptionNotName(name))) {
+              canonical[key] = name;
+            }
             // First description wins; a later, emptier mention adds nothing.
             final existing = found[key];
             if (existing == null ||
                 (existing.isEmpty && description.isNotEmpty)) {
-              found[key] = description;
+              found[key] = tidyDescription(description);
             }
           }
         }
       }
+      // "The baby dragon" and "Iridescent fish" are not people, they are
+      // sentences that lost their subject — the prose names that dragon Oliver
+      // two paragraphs later. Saving them gave a world somebody nobody is.
+      found.removeWhere((key, _) => readsAsName[key] != true);
       if (found.isEmpty) continue;
       stdout.writeln('${child.displayName} / ${world.name}');
       for (final entry in found.entries.take(12)) {

@@ -6,6 +6,12 @@
 /// for the old recordings. This shows what is actually there and under which
 /// voice, which is the difference between "gone" and "not being asked for".
 ///
+/// It also says, per story, whether the app would actually *speak* it. That is
+/// a different question from whether a recording exists, and the two disagree
+/// in the one state that reads exactly like a bug: the download badge asks
+/// every voice this device has used, playback asks only the voice chosen now,
+/// so a story can show as downloaded and then refuse to read itself aloud.
+///
 ///     dart run tool/narration_voices.dart
 library;
 
@@ -37,6 +43,15 @@ List<String> _candidates(Map<String, dynamic> prefs) {
   return out.toList();
 }
 
+/// The voice the app is set to right now, built the way the app builds it:
+/// the chosen engine, and that engine's own model and voice. This is the only
+/// signature playback will look under.
+String _currentVoice(Map<String, dynamic> prefs) {
+  final engine = (prefs['flutter.voice_engine'] as String?) ?? 'gemini';
+  return '$engine/${prefs['flutter.voicemodel_$engine'] ?? ''}'
+      '/${prefs['flutter.voicename_$engine'] ?? ''}';
+}
+
 void main() {
   final home = Platform.environment['USERPROFILE'];
   final audioDir = Directory('$home\\Documents\\Moonloom\\audio');
@@ -53,9 +68,15 @@ void main() {
       ? audioDir.listSync().whereType<File>().length
       : 0;
   final voices = _candidates(prefs);
+  final current = _currentVoice(prefs);
   stdout
     ..writeln('$onDisk files in ${audioDir.path}')
-    ..writeln('voices tried: ${voices.length}\n');
+    ..writeln('voices tried: ${voices.length}')
+    ..writeln('the voice now: $current\n');
+
+  var plays = 0;
+  var wrongVoice = 0;
+  var silent = 0;
 
   final db = sqlite3.open(
     '$home\\Documents\\moonloom.sqlite',
@@ -86,13 +107,47 @@ void main() {
         }
       }
     }
-    stdout.writeln('${s['title']}  (${beats.length} chapters)');
+    // What a grown-up would see, said in those terms rather than the cache's.
+    final whole = held[current] == beats.length;
+    final anywhere = held.values.any((v) => v == beats.length);
+    if (whole) {
+      plays++;
+    } else if (held.isNotEmpty) {
+      wrongVoice++;
+    } else {
+      silent++;
+    }
+
+    stdout.writeln(
+      '${s['title']}  (${beats.length} chapters)  '
+      '${whole
+          ? 'PLAYS'
+          : held.isEmpty
+          ? 'nothing recorded'
+          : anywhere
+          ? 'badge says downloaded, will NOT speak'
+          : 'part-recorded'}',
+    );
     if (held.isEmpty) {
       stdout.writeln('  no narration saved in any voice');
     }
     for (final e in held.entries) {
-      stdout.writeln('  ${e.value}/${beats.length}  ${e.key}');
+      stdout.writeln(
+        '  ${e.value}/${beats.length}  ${e.key}'
+        '${e.key == current ? '   <- the voice now' : ''}',
+      );
     }
+  }
+
+  stdout.writeln(
+    '\n$plays play now, $wrongVoice recorded in another voice, '
+    '$silent with no recording at all.',
+  );
+  if (wrongVoice > 0) {
+    stdout.writeln(
+      'The $wrongVoice in another voice are not lost: switch the voice back to '
+      'the one listed, or download them again in this one.',
+    );
   }
   db.close();
 }

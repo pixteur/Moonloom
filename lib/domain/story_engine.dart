@@ -340,19 +340,25 @@ class StoryEngine {
     if (characters.isEmpty) return;
     final known = await _repo.loadCharacters(worldId);
     if (known.length >= _maxCast) return;
-    final seen = {for (final c in known) c.name.toLowerCase()};
+    final seen = {for (final c in known) foldedName(c.name)};
     var room = _maxCast - known.length;
 
     for (final entry in characters) {
       if (room <= 0) break;
       final (name, description) = parseCastEntry(entry);
-      if (name.isEmpty || !seen.add(name.toLowerCase())) continue;
+      if (name.isEmpty || !seen.add(foldedName(name))) continue;
+      // "The baby dragon" and "Iridescent fish" are not characters, they are
+      // sentences that lost their subject — and a world that saves them ends
+      // up carrying somebody nobody is into every later prompt. The prose
+      // names that dragon Oliver two paragraphs later; this waits for that
+      // rather than enshrining the description.
+      if (isDescriptionNotName(name)) continue;
       await _repo.saveCharacter(
         StoryCharacter(
           id: _uuid.v4(),
           worldId: worldId,
           name: name,
-          description: description,
+          description: tidyDescription(description),
         ),
       );
       room--;

@@ -873,14 +873,18 @@ void main() {
 
       final cast = await repo.loadCharacters('w1');
       expect(cast.map((c) => c.name), containsAll(['Pip', 'Coral']));
+      // The article is dropped on the way in, so a cast list reads the same
+      // whichever chapter each line came from — "Pip - axolotl" beside
+      // "Coral - sea turtle", never "an axolotl" beside "sea turtle". The
+      // species is what has to survive, and does.
       expect(
         cast.firstWhere((c) => c.name == 'Pip').description,
-        'an axolotl',
+        'axolotl',
         reason: 'the species is the whole point',
       );
       expect(
         cast.firstWhere((c) => c.name == 'Coral').description,
-        'a sea turtle',
+        'sea turtle',
         reason: 'an em dash separates just as well as a comma',
       );
     });
@@ -902,9 +906,10 @@ void main() {
         repo: repo,
       ).takeTurn(child: child, series: second, intent: StoryIntent.dice);
 
-      // Stored as a promptLine, which normalises the separator to an em dash.
+      // Stored as a promptLine, which normalises the separator to an em dash
+      // and the description to its article-less form.
       expect(ai.prompt!.user, contains('Pip'));
-      expect(ai.prompt!.user, contains('an axolotl'));
+      expect(ai.prompt!.user, contains('axolotl'));
       expect(ai.prompt!.user, contains('ALREADY EXIST'));
       expect(ai.prompt!.user, contains('must not change'));
     });
