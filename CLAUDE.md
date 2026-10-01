@@ -173,6 +173,21 @@ picture in the library — no throw, no log, the Lunii just kept showing the old
 procedural cover. Sniff the format (`img.decodeImage`), never assume it from
 the name. Fixtures cannot catch this: a test writes the PNG it then reads.
 
+**The AI provider is `fake` until settings load, and fake does not fail.**
+`aiConfigProvider` must answer synchronously, so it answers `fake` and loads
+the real choice behind it. An engine read in that window writes canned
+chapters *successfully* — no fallback warning, never named, six chapters of
+"The gentle path home and a peaceful goodnight." Take the engine through
+`readyStoryEngine(ref)`, never `ref.read(storyEngineProvider)`. A probe that
+builds `GeminiProvider` directly cannot reproduce this; it skips the race.
+
+**The full narration polish is not safe to run twice.** A second pass
+lengthened 68 of 561 real files by up to 15 s: levelling moves room tone across
+the silence floor, so a sentence break becomes a paragraph break. New audio is
+polished once, on the way in. Anything going back over the cache uses
+`deClickNarration`, which is idempotent — `tool/polish_cache.dart` checks and
+reports this on every run, and backs files up before rewriting them.
+
 **Verify against the real database or device, not just tests.** Both the
 migration bug and the download-badge bug passed every test and failed
 immediately in the app. `tool/` holds read-only probes for exactly this.

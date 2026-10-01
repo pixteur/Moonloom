@@ -174,6 +174,46 @@ double _peakNear(Int16List s, int from, int to) {
   return peak / 32768.0;
 }
 
+/// Only the de-click, for audio that may already have been polished.
+///
+/// The full [polishNarration] is not safe to run twice on real narration:
+/// measured on the cache, a second pass lengthened 68 of 561 files by up to
+/// 15 seconds. The level correction moves room tone across the silence floor,
+/// so a sentence break that measured just under a paragraph break the first
+/// time measures over it the second, and gets stretched. New audio is polished
+/// exactly once, on its way into the cache, so that never bites in the app —
+/// but a tool going back over the cache cannot tell polished files from
+/// unpolished ones.
+///
+/// The de-click can be repeated: a repaired step is a ramp, and a ramp has no
+/// jump left in it to find. So this is what to run on audio of unknown
+/// history, and it is the part that removes the static.
+Uint8List deClickNarration(Uint8List wav) {
+  if (!_isPcmWav(wav)) return wav;
+  final view = ByteData.sublistView(wav);
+  final rate = view.getUint32(24, Endian.little);
+  final channels = max(1, view.getUint16(22, Endian.little));
+  final count = (wav.length - 44) ~/ 2;
+  if (rate == 0 || count == 0) return wav;
+  final samples = Int16List(count);
+  for (var i = 0; i < count; i++) {
+    samples[i] = view.getInt16(44 + i * 2, Endian.little);
+  }
+  final before = Int16List.fromList(samples);
+  _deClick(samples, rate * channels);
+  var changed = false;
+  for (var i = 0; i < count; i++) {
+    if (samples[i] != before[i]) {
+      changed = true;
+      break;
+    }
+  }
+  // Untouched audio comes back as the same object, so a caller can tell
+  // "nothing to fix" from "fixed" without comparing megabytes itself.
+  if (!changed) return wav;
+  return _wrap(Uint8List.fromList(samples.expand(_le16).toList()), wav);
+}
+
 bool _isPcmWav(Uint8List b) =>
     b.length > 44 &&
     b[0] == 0x52 &&
