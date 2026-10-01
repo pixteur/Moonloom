@@ -91,6 +91,10 @@ class _StoryViewScreenState extends ConsumerState<StoryViewScreen> {
       await _speak();
       return;
     }
+    // The current voice only, and deliberately. A recording in some other
+    // voice is not something to start playing by itself: reading it would be
+    // the wrong voice, and reading it in the right one means paying to
+    // synthesize a chapter nobody asked out loud for yet.
     final saved = await ref
         .read(savedNarrationProvider)
         .isSavedAnywhere(

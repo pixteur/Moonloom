@@ -48,9 +48,23 @@ List<String> _candidates(Map<String, dynamic> prefs) {
 /// signature playback will look under.
 String _currentVoice(Map<String, dynamic> prefs) {
   final engine = (prefs['flutter.voice_engine'] as String?) ?? 'gemini';
-  return '$engine/${prefs['flutter.voicemodel_$engine'] ?? ''}'
-      '/${prefs['flutter.voicename_$engine'] ?? ''}';
+  final stored = (prefs['flutter.voicemodel_$engine'] as String?) ?? '';
+  // An empty stored model means "the engine's default", which is what the app
+  // substitutes when it builds the synthesizer. Reading the setting literally
+  // produces `elevenlabs//VOICE`, which matches nothing — and then this tool
+  // reports that a story with 160 files on the disk will not play, which is
+  // worse than not asking.
+  final model = stored.isEmpty ? _defaultModels[engine] ?? '' : stored;
+  return '$engine/$model/${prefs['flutter.voicename_$engine'] ?? ''}';
 }
+
+/// The model each synthesizer falls back to, mirrored from their own
+/// `defaultModel` constants.
+const _defaultModels = {
+  'gemini': 'gemini-3.8-flash-lite-tts',
+  'elevenlabs': 'eleven_v3',
+  'openai': 'gpt-4o-mini-tts',
+};
 
 void main() {
   final home = Platform.environment['USERPROFILE'];

@@ -133,7 +133,25 @@ List<String> chapterAudioKeys({
   NarrationNotes notes = const NarrationNotes(),
 }) => [
   for (final chunk in narratedChunks(text, notes, sizeChunks))
-    audioCacheKey(
-      '$voiceSignature|$language|${chunk.text}${chunk.cacheSuffix}',
+    chunkAudioKey(
+      voiceSignature: voiceSignature,
+      language: language,
+      chunk: chunk,
     ),
 ];
+
+/// The cache key for one chunk.
+///
+/// The single expression every key is built from, so that "ask
+/// [chapterAudioKeys]" and "look one chunk up during playback" cannot drift
+/// into asking different questions. They had drifted once already — exports
+/// keyed on a whole chapter's text, and fully downloaded stories reported no
+/// narration saved. The cue is in the key because it changes the audio without
+/// changing a word of the text.
+String chunkAudioKey({
+  required String voiceSignature,
+  required String language,
+  required NarratedChunk chunk,
+}) => audioCacheKey(
+  '$voiceSignature|$language|${chunk.text}${chunk.cacheSuffix}',
+);

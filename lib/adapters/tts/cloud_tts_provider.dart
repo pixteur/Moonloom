@@ -5,6 +5,7 @@ import 'package:audioplayers/audioplayers.dart' hide AudioCache;
 
 import '../../domain/models/narration.dart';
 import '../ai/rate_limit_retry.dart';
+import '../audio/audio_kind.dart';
 import 'audio_polish.dart';
 import 'audio_cache.dart';
 import 'narrated_chunks.dart';
@@ -42,6 +43,7 @@ class CloudTtsProvider implements TtsProvider {
 
   final TtsSynthesizer _synth;
   final TtsProviderId _id;
+
   final AudioCache? _cache;
   final AudioPlayer _player;
   late final StreamSubscription<void> _completeSub;
@@ -128,8 +130,10 @@ class CloudTtsProvider implements TtsProvider {
 
   /// The cue is part of the key: it changes the audio without changing a word
   /// of the text, so a key built from text alone would replay the old reading.
-  String _keyFor(NarratedChunk chunk, String language) => audioCacheKey(
-    '${_synth.voiceSignature}|$language|${chunk.text}${chunk.cacheSuffix}',
+  String _keyFor(NarratedChunk chunk, String language) => chunkAudioKey(
+    voiceSignature: _synth.voiceSignature,
+    language: language,
+    chunk: chunk,
   );
 
   Future<Uint8List> _cachedSynthesize(
@@ -141,6 +145,7 @@ class CloudTtsProvider implements TtsProvider {
     final key = _keyFor(chunk, language);
     final hit = await _cache?.get(key);
     if (hit != null && hit.isNotEmpty) return hit;
+
     final bytes = await retryOnRateLimit(
       () => _synth.synthesize(
         chunk.text,
@@ -257,7 +262,11 @@ class CloudTtsProvider implements TtsProvider {
     }
     try {
       _set(TtsState.speaking); // audio is starting for real now
-      await _player.play(BytesSource(bytes, mimeType: _synth.mimeType));
+      // The format comes from the bytes, not from whichever synthesizer
+      // happens to be live. A recording outlives the voice that made it, so
+      // the two disagree as soon as a saved take is played — and a WAV
+      // announced as MP3 simply does not play, silently.
+      await _player.play(BytesSource(bytes, mimeType: audioMimeOf(bytes)));
     } catch (_) {
       // This one chunk wouldn't play — skip it and continue with the next.
       _advance();

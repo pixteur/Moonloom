@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../adapters/ai/provider_exceptions.dart';
 import '../../adapters/lunii/lunii_transfer.dart';
+import '../../adapters/tts/voice_catalog.dart';
 import '../../app_providers.dart';
 import '../../domain/cast_line.dart';
 import '../../domain/models/beat.dart';
@@ -783,25 +784,38 @@ class _StoryChaptersScreenState extends ConsumerState<StoryChaptersScreen> {
                                 if (parentMode)
                                   _DownloadIcon(
                                     signature: '$voiceSig|$lang|${b.id}',
-                                    // Asks across every voice this device has
-                                    // recorded with, not only the current one:
-                                    // a chapter downloaded last week in another
-                                    // voice is still downloaded.
-                                    isCached: () => ref
-                                        .read(savedNarrationProvider)
-                                        .isSavedAnywhere(
-                                          b,
-                                          language: lang,
-                                          preferred: ref
-                                              .read(ttsProvider)
-                                              .voiceSignature,
-                                          alternatives:
-                                              ref
-                                                  .read(knownVoicesProvider)
-                                                  .asData
-                                                  ?.value ??
-                                              const [],
-                                        ),
+                                    // Which voice holds it, not merely whether
+                                    // something does. A tick meaning "saved"
+                                    // when the recording belongs to a voice
+                                    // you have since changed away from is a
+                                    // promise the app does not keep.
+                                    state: () async {
+                                      final current = ref
+                                          .read(ttsProvider)
+                                          .voiceSignature;
+                                      final take = await ref
+                                          .read(savedNarrationProvider)
+                                          .find(
+                                            b,
+                                            language: lang,
+                                            preferred: current,
+                                            alternatives:
+                                                ref
+                                                    .read(knownVoicesProvider)
+                                                    .asData
+                                                    ?.value ??
+                                                const [],
+                                          );
+                                      if (take == null) {
+                                        return (_Narration.none, '');
+                                      }
+                                      return take.voiceSignature == current
+                                          ? (_Narration.thisVoice, '')
+                                          : (
+                                              _Narration.otherVoice,
+                                              take.voiceSignature,
+                                            );
+                                    },
                                     onDownload: () => ref
                                         .read(ttsProvider)
                                         .preload(
@@ -849,16 +863,44 @@ class _Writing extends StatelessWidget {
 /// Per-chapter narration status + on-demand download. A filled "downloaded"
 /// badge when the audio is saved on-device; otherwise a tappable cloud that
 /// synthesizes (with the current cloud voice), downloads, and saves it.
+/// What the app holds for one chapter's narration.
+///
+/// Narration is keyed by the voice that spoke it, so there is a third state
+/// between "saved" and "not saved": saved, but by a voice that is no longer
+/// the one chosen. Playback reads in the chosen voice, so such a chapter gets
+/// recorded again rather than replayed — and showing that as a plain tick is
+/// what made a library with 600 MB of audio in it look empty.
+enum _Narration { none, otherVoice, thisVoice }
+
+/// A voice signature as something a grown-up can read. `elevenlabs/eleven_v3/
+/// MF3mGyEYCl7XYWbV9V6O` identifies a voice to the cache and nobody else.
+String _voiceLabel(String signature) {
+  final parts = signature.split('/');
+  if (parts.length < 3) return signature;
+  final engine = switch (parts.first) {
+    'elevenlabs' => 'an ElevenLabs voice',
+    'openai' => 'an OpenAI voice',
+    // Gemini's voices have names the app gives friendlier labels to; the other
+    // engines use opaque ids, where naming the engine is the most that can
+    // honestly be said.
+    'gemini' => 'the Gemini voice ${voiceLabel(parts.last)}',
+    _ => parts.first,
+  };
+  return engine;
+}
+
 class _DownloadIcon extends StatefulWidget {
   const _DownloadIcon({
-    required this.isCached,
+    required this.state,
     required this.signature,
     required this.onDownload,
   });
 
-  /// Asks the voice provider — the only thing that knows how a chapter is
-  /// chunked and keyed — rather than rebuilding a cache key here.
-  final Future<bool> Function() isCached;
+  /// Asks [SavedNarration] — the only thing that knows how a chapter is
+  /// chunked and keyed — rather than rebuilding a cache key here. It answers
+  /// *which* voice holds the recording, because that is what decides whether
+  /// pressing play is instant or is a paid re-recording.
+  final Future<(_Narration, String)> Function() state;
 
   /// Changes whenever the voice, language or text does, so the badge rechecks.
   final String signature;
@@ -869,7 +911,8 @@ class _DownloadIcon extends StatefulWidget {
 }
 
 class _DownloadIconState extends State<_DownloadIcon> {
-  bool? _has;
+  _Narration _state = _Narration.none;
+  String _otherVoice = '';
   bool _busy = false;
 
   @override
@@ -890,8 +933,13 @@ class _DownloadIconState extends State<_DownloadIcon> {
   }
 
   Future<void> _check() async {
-    final has = await widget.isCached();
-    if (mounted) setState(() => _has = has);
+    final (state, voice) = await widget.state();
+    if (mounted) {
+      setState(() {
+        _state = state;
+        _otherVoice = voice;
+      });
+    }
   }
 
   Future<void> _download() async {
@@ -924,7 +972,7 @@ class _DownloadIconState extends State<_DownloadIcon> {
     }
     await _check();
     if (mounted) setState(() => _busy = false);
-    final ok = _has ?? false;
+    final ok = _state == _Narration.thisVoice;
     messenger.clearSnackBars();
     messenger.showSnackBar(
       SnackBar(
@@ -955,16 +1003,32 @@ class _DownloadIconState extends State<_DownloadIcon> {
         ),
       );
     }
-    final has = _has ?? false;
+    // Three states, because there are three. The middle one used to show the
+    // same tick as the first and then not play — which is how a library with
+    // every chapter recorded came to be reported as having no audio at all.
     return IconButton(
       visualDensity: VisualDensity.compact,
       icon: Icon(
-        has ? Icons.download_done_rounded : Icons.cloud_download_outlined,
+        switch (_state) {
+          _Narration.thisVoice => Icons.download_done_rounded,
+          _Narration.otherVoice => Icons.record_voice_over_outlined,
+          _Narration.none => Icons.cloud_download_outlined,
+        },
         size: 22,
-        color: has ? theme.colorScheme.primary : theme.disabledColor,
+        color: switch (_state) {
+          _Narration.thisVoice => theme.colorScheme.primary,
+          _Narration.otherVoice => theme.colorScheme.tertiary,
+          _Narration.none => theme.disabledColor,
+        },
       ),
-      tooltip: has ? 'Saved on device' : 'Download narration',
-      onPressed: has ? null : _download,
+      tooltip: switch (_state) {
+        _Narration.thisVoice => 'Saved in this voice',
+        _Narration.otherVoice =>
+          'Saved in ${_voiceLabel(_otherVoice)}, not the voice you are using '
+              'now. Tap to record it in this one, or switch the voice back.',
+        _Narration.none => 'Download narration',
+      },
+      onPressed: _state == _Narration.thisVoice ? null : _download,
     );
   }
 }
