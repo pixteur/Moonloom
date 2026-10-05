@@ -84,6 +84,16 @@ void main() {
     await tapText("Pip's Adventures");
     await tapText('New episode');
 
+    // Exactly the choices on the story that came back as placeholders: Pip as
+    // the named hero, a week long, half in French. The first version of this
+    // test took the defaults and passed, which proved only that the defaults
+    // work.
+    await tapText('Pip');
+    await tapText('A week');
+    await tapText('Half & half');
+    await tapText('Spanish');
+    await tapText('French');
+
     say(
       'before build  config=${container.read(aiConfigProvider)}  '
       'ai=${container.read(aiProvider).runtimeType}  '
@@ -115,6 +125,7 @@ void main() {
       'after build  config=${container.read(aiConfigProvider)}  '
       'ai=${container.read(aiProvider).runtimeType}',
     );
+    say('why        ${container.read(aiConfigProvider.notifier).why}');
     say('story id   $id');
     say('chapter 1  $summary');
     expect(

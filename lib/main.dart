@@ -26,6 +26,13 @@ Future<void> main() async {
     container.read(voiceConfigProvider.notifier).refresh(),
   ]);
 
+  await noteAiChoice(
+    'startup',
+    config: container.read(aiConfigProvider),
+    provider: container.read(aiProvider),
+    why: container.read(aiConfigProvider.notifier).why,
+  );
+
   runApp(
     UncontrolledProviderScope(container: container, child: const MoonloomApp()),
   );

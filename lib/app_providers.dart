@@ -183,7 +183,52 @@ Future<StoryEngine> readyStoryEngine(WidgetRef ref) async {
   // Reading the notifier builds the provider if nothing has yet, which starts
   // the load; awaiting [ready] waits for it to finish.
   await ref.read(aiConfigProvider.notifier).ready;
+  await noteAiChoice(
+    'story',
+    config: ref.read(aiConfigProvider),
+    provider: ref.read(aiProvider),
+    why: ref.read(aiConfigProvider.notifier).why,
+  );
   return ref.read(storyEngineProvider);
+}
+
+/// Write down which story AI the app settled on, and why, to a local file.
+///
+/// Settings only — the provider, the reason, the consent flag, the chosen
+/// provider's name and the folder the settings came from. Never a prompt, a
+/// story or anything about a child; this stays on the machine and is read by a
+/// person diagnosing it.
+///
+/// It exists because "Naming it…" stories with placeholder chapters came from
+/// the release build launched by its shortcut, while the same code run by
+/// every test — debug, AOT, the real main(), the real settings, the exact
+/// choices — wrote real stories. The only process that could say what it
+/// decided was the one that got it wrong, so now it says.
+Future<void> noteAiChoice(
+  String where, {
+  required ProviderId config,
+  required Object provider,
+  required String why,
+}) async {
+  try {
+    final support = await getApplicationSupportDirectory();
+    final prefs = await AppPrefs.open();
+    final line = [
+      DateTime.now().toIso8601String(),
+      where.padRight(8),
+      'config=$config',
+      'provider=${provider.runtimeType}',
+      'why="$why"',
+      'consent=${prefs.aiConsentGiven}',
+      'selected=${prefs.selectedProvider}',
+      'settings=${support.path}',
+    ].join('  ');
+    await File(
+      p.join(support.path, 'ai-choice.log'),
+    ).writeAsString('$line\n', mode: FileMode.append, flush: true);
+  } catch (_) {
+    // A diagnostic must never be the thing that stops a story.
+  }
 }
 
 /// Why the next story would be written by the offline placeholder, or null
