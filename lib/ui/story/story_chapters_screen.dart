@@ -14,6 +14,7 @@ import '../../domain/models/series.dart';
 import '../../domain/models/story_character.dart';
 import '../../domain/models/story_image.dart';
 import '../../domain/picture_prompt.dart';
+import '../../domain/prompt_builder.dart';
 import '../common/hold_to_delete.dart';
 import '../common/language_choices.dart';
 import '../series/story_language_sheet.dart';
@@ -49,6 +50,7 @@ class _StoryChaptersScreenState extends ConsumerState<StoryChaptersScreen> {
   /// A transfer is in flight. The work is in a worker isolate, so the app
   /// stays responsive; this only stops a second send being started on top.
   bool _sending = false;
+  bool _drawing = false;
 
   /// How many chapters that run has got through, for the progress label.
   int _downloaded = 0;
@@ -102,6 +104,10 @@ class _StoryChaptersScreenState extends ConsumerState<StoryChaptersScreen> {
       }
       var beats = await repo.loadBeats(series.id);
       var first = true;
+      // Whether this visit wrote anything. Pictures are drawn automatically
+      // only for a story that finished *now* — opening an old finished story
+      // must not quietly spend money redrawing it.
+      var wroteAny = false;
       // As many chapters as this story is meant to have, asked of the engine
       // that decides it. This screen used to keep its own constant six and
       // stop there, so a week-long story — seven, one a night — always ended
@@ -120,6 +126,7 @@ class _StoryChaptersScreenState extends ConsumerState<StoryChaptersScreen> {
           chosenTwist: isOpening ? widget.initialTwist : null,
         );
         first = false;
+        wroteAny = true;
         if (!_active || !mounted) return;
         // Read the story back rather than reusing the copy we started with.
         // The first chapter names an untitled story, and that name is written
@@ -132,6 +139,12 @@ class _StoryChaptersScreenState extends ConsumerState<StoryChaptersScreen> {
         ref.invalidate(seriesForChildProvider(child.id));
         _warn(engine.lastFallbackReason);
         beats = await repo.loadBeats(series.id);
+      }
+      // The story just finished: give it its pictures, the same way the
+      // illustrated stories were made — world style first, then a sheet for
+      // each character, then the cover and chapters drawn against them.
+      if (wroteAny && mounted && beats.isNotEmpty && beats.last.isFinal) {
+        await _drawPictures(series, onlyIfNone: true);
       }
     } catch (e, stack) {
       // The banner can only carry a sentence; without the stack a failure here
@@ -146,6 +159,82 @@ class _StoryChaptersScreenState extends ConsumerState<StoryChaptersScreen> {
     // NB: we intentionally do NOT pre-synthesize every chapter's audio — that
     // burned through the voice provider's daily quota. Narration is fetched
     // on demand (Listen, or tapping a chapter's cloud badge) and then cached.
+  }
+
+  /// Give a story its pictures — the method the hand-made illustrated stories
+  /// were drawn with, which until now only a `tool/` script ever ran.
+  ///
+  /// The world's style guide is written first (once per world, by the story
+  /// model, which already knows the setting), then a reference sheet for each
+  /// character, then the cover and the chapters that earn a picture — all
+  /// drawn against those sheets, which is what keeps Pip the same axolotl from
+  /// the cover to the last page. Redrawing replaces rather than accumulates.
+  ///
+  /// [onlyIfNone] is the automatic path: a story that already has a cover or
+  /// chapter pictures is left alone. A placeholder story is never drawn — the
+  /// pictures would illustrate canned text.
+  Future<void> _drawPictures(Series series, {bool onlyIfNone = false}) async {
+    if (_drawing || !mounted) return;
+    final repo = ref.read(storageRepoProvider);
+    if (onlyIfNone) {
+      final existing = await repo.loadImages(series.id);
+      if (existing.any(
+        (i) =>
+            i.kind == StoryImageKind.cover || i.kind == StoryImageKind.chapter,
+      )) {
+        return;
+      }
+    }
+    if (placeholderReason(ref) != null) return;
+    if (!mounted) return;
+
+    setState(() => _drawing = true);
+    showErrorBanner(context, 'Drawing the pictures — this takes a minute…');
+    final service = ref.read(illustrationServiceProvider);
+    final failures = <String>[];
+    try {
+      final beats = await repo.loadBeats(series.id);
+      var world = series.worldId == null
+          ? null
+          : await repo.loadWorldById(series.worldId!);
+      final cast = world == null
+          ? const <StoryCharacter>[]
+          : await repo.loadCharacters(world.id);
+      if (world != null) {
+        final ai = ref.read(aiProvider);
+        world = await service.ensureStyleGuide(
+          world,
+          writeGuide: (brief) async => (await ai.generate(
+            StoryPrompt(system: brief, user: 'Write the art direction.'),
+          )).storyText,
+        );
+      }
+      final made = await service.illustrate(
+        series: series,
+        beats: beats,
+        world: world,
+        cast: cast,
+        onStep: (what) {
+          if (what.startsWith('could not')) failures.add(what);
+        },
+      );
+      ref.invalidate(storyImagesProvider(series.id));
+      if (mounted) {
+        showErrorBanner(
+          context,
+          failures.isEmpty
+              ? 'Drew ${made.length} picture${made.length == 1 ? '' : 's'}.'
+              : 'Drew ${made.length}; ${failures.length} could not be drawn '
+                    '(${failures.first}).',
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        showErrorBanner(context, 'Could not draw the pictures: ${_reason(e)}');
+      }
+    } finally {
+      if (mounted) setState(() => _drawing = false);
+    }
   }
 
   /// Voices this device has recorded with, so an export can still find audio
@@ -647,10 +736,15 @@ class _StoryChaptersScreenState extends ConsumerState<StoryChaptersScreen> {
               itemBuilder: (_) => const [
                 PopupMenuItem(value: 'rename', child: Text('Rename story')),
                 PopupMenuItem(value: 'language', child: Text('Languages…')),
+                PopupMenuItem(
+                  value: 'pictures',
+                  child: Text('Draw the pictures'),
+                ),
               ],
               onSelected: (v) {
                 if (v == 'rename') _rename(series);
                 if (v == 'language') _editLanguages(series);
+                if (v == 'pictures') _drawPictures(series);
               },
             ),
           // Every export sends a story out of the app — as a file to pass on,
