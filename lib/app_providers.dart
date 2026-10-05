@@ -94,14 +94,31 @@ class AiConfigController extends Notifier<ProviderId> {
 
   Future<void> _hydrate() async => state = await _resolve();
 
+  /// Why the last resolution came out as it did, in words a grown-up can act
+  /// on. Shown whenever a story is about to be written by the placeholder, so
+  /// that never again happens silently — it took four sessions to diagnose
+  /// "Naming it…" stories because the fake provider succeeds without a word.
+  String why = 'settings have not loaded yet';
+
   Future<ProviderId> _resolve() async {
     final prefs = await AppPrefs.open();
-    if (!prefs.aiConsentGiven) return ProviderId.fake;
+    if (!prefs.aiConsentGiven) {
+      why = 'permission to use a story AI has not been given';
+      return ProviderId.fake;
+    }
     final selected = providerIdFromName(prefs.selectedProvider);
     final keyName = keyNameFor(selected);
-    if (keyName == null) return ProviderId.fake;
+    if (keyName == null) {
+      why = 'the chosen story AI (${selected.name}) is not available yet';
+      return ProviderId.fake;
+    }
     final hasKey = await ref.read(secretStoreProvider).hasKey(keyName);
-    return hasKey ? selected : ProviderId.fake;
+    if (!hasKey) {
+      why = 'no key is saved for ${selected.name}';
+      return ProviderId.fake;
+    }
+    why = 'using ${selected.name}';
+    return selected;
   }
 
   Future<void> refresh() async => state = await _resolve();
@@ -168,6 +185,17 @@ Future<StoryEngine> readyStoryEngine(WidgetRef ref) async {
   await ref.read(aiConfigProvider.notifier).ready;
   return ref.read(storyEngineProvider);
 }
+
+/// Why the next story would be written by the offline placeholder, or null
+/// when a real story AI will write it.
+///
+/// The placeholder never fails — it answers instantly with canned chapters —
+/// so without this a misconfigured app looks exactly like a working one that
+/// writes dull stories. Ask this after [readyStoryEngine] and say it out loud.
+String? placeholderReason(WidgetRef ref) =>
+    ref.read(aiProvider) is FakeAiProvider
+    ? ref.read(aiConfigProvider.notifier).why
+    : null;
 
 /// The story engine, wired to the active provider + storage.
 final storyEngineProvider = Provider<StoryEngine>(

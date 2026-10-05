@@ -90,6 +90,17 @@ class _StoryChaptersScreenState extends ConsumerState<StoryChaptersScreen> {
       // any other build failure rather than escaping an unawaited future.
       final engine = await readyStoryEngine(ref);
       if (!mounted) return;
+      // Never silently. The placeholder answers instantly and successfully, so
+      // a story written by it looks like the app working — six identical
+      // chapters and a title stuck on "Naming it…" — unless it says so.
+      final placeholder = placeholderReason(ref);
+      if (placeholder != null) {
+        showErrorBanner(
+          context,
+          'These are offline placeholder chapters, not a real story: '
+          '$placeholder. Set up the story AI in Settings to write real ones.',
+        );
+      }
       var beats = await repo.loadBeats(series.id);
       var first = true;
       while (_active &&

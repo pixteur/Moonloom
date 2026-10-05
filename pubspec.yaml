@@ -52,6 +52,11 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  # Drives the real app — real main(), real plugins, real settings file — for
+  # the bugs a widget test cannot see because it mocks exactly the parts that
+  # were wrong. See integration_test/.
+  integration_test:
+    sdk: flutter
 
   # Used by tool/db_schema.dart to inspect the on-disk database directly.
   sqlite3: ^3.3.2

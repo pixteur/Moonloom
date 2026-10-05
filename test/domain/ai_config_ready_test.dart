@@ -75,6 +75,49 @@ void main() {
     );
   });
 
+  // The placeholder answers instantly and successfully, so the app has to say
+  // why it is being used — every reason in words a grown-up can act on.
+  group('why the placeholder is writing', () {
+    Future<String> whyWith(Map<String, Object> prefs, {String? key}) async {
+      SharedPreferences.setMockInitialValues(prefs);
+      final c = ProviderContainer(
+        overrides: [
+          secretStoreProvider.overrideWithValue(_KeyFor(key ?? 'none')),
+        ],
+      );
+      addTearDown(c.dispose);
+      await c.read(aiConfigProvider.notifier).ready;
+      return c.read(aiConfigProvider.notifier).why;
+    }
+
+    test('no permission given', () async {
+      expect(
+        await whyWith({'selected_provider': 'gemini'}),
+        contains('permission'),
+      );
+    });
+
+    test('no key saved', () async {
+      expect(
+        await whyWith({
+          'ai_third_party_consent': true,
+          'selected_provider': 'gemini',
+        }),
+        contains('no key'),
+      );
+    });
+
+    test('a working setup says what it is using', () async {
+      expect(
+        await whyWith({
+          'ai_third_party_consent': true,
+          'selected_provider': 'gemini',
+        }, key: GeminiProvider.keyName),
+        'using gemini',
+      );
+    });
+  });
+
   // The fake provider still has a job: no consent or no key really does mean
   // canned stories, offline. Waiting must not turn that into a real call.
   test('without consent it stays fake after loading too', () async {
