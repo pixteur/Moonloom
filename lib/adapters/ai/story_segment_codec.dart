@@ -21,6 +21,7 @@ const List<String> storySegmentFields = [
   'narration_style',
   'character_voices',
   'narration_cues',
+  'dialogue_speakers',
 ];
 
 /// Standard JSON Schema for the story segment — used by Claude (`output_config`)
@@ -59,6 +60,10 @@ const Map<String, dynamic> jsonStorySchema = {
       'type': 'array',
       'items': {'type': 'string'},
     },
+    'dialogue_speakers': {
+      'type': 'array',
+      'items': {'type': 'string'},
+    },
   },
   'required': storySegmentFields,
   'additionalProperties': false,
@@ -81,6 +86,7 @@ StorySegment storySegmentFromJson(Map<String, dynamic> d) => StorySegment(
     style: (d['narration_style'] as String?)?.trim() ?? '',
     characterVoices: _strList(d['character_voices']),
     cues: _strList(d['narration_cues']).map(NarrationCue.parse).toList(),
+    speakers: _strList(d['dialogue_speakers']),
   ),
 );
 

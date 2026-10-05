@@ -124,8 +124,9 @@ class PromptBuilder {
         'Finally, "narration_style": one line describing the voice this whole '
         'chapter should be read aloud in; and "character_voices": one entry '
         'per speaking character, like "Leo — precise and warm, with a soft '
-        'metallic edge". Return "narration_cues" as an empty array; the '
-        'editing pass writes those against the finished prose.',
+        'metallic edge". Return "narration_cues" and "dialogue_speakers" as '
+        'empty arrays; the editing pass writes those against the finished '
+        'prose.',
       );
 
     final user = StringBuffer();
@@ -448,6 +449,16 @@ class PromptBuilder {
         'note=linger on the last line". Leave a paragraph\'s entry as an '
         'empty string when it should simply be read plainly — most of a '
         'story should be.',
+      )
+      ..writeln(
+        '- "dialogue_speakers": exactly one entry per paragraph, in the same '
+        'order as "narration_cues". Each entry names who speaks each quoted '
+        'line in that paragraph, in the order the quotes appear, separated by '
+        'commas — for example "Pip, Barnaby" for a paragraph where Pip speaks '
+        "first and Barnaby answers. Use each character's name exactly as it "
+        'appears in "character_voices". Leave the entry empty when the '
+        'paragraph has no dialogue. Count the quotes: one name per quoted '
+        'line, no more and no fewer.',
       )
       ..writeln(
         'Describe the SOUND in ordinary words. Never emit SSML, audio '

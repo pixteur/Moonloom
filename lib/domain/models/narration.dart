@@ -99,6 +99,7 @@ class NarrationNotes {
     this.style = '',
     this.characterVoices = const [],
     this.cues = const [],
+    this.speakers = const [],
   });
 
   /// One line covering the whole chapter — the voice to read it all in.
@@ -114,8 +115,17 @@ class NarrationNotes {
   /// One cue per paragraph of the chapter, in order.
   final List<NarrationCue> cues;
 
+  /// Per paragraph, in order: who speaks each quoted line, comma separated —
+  /// "Pip, Barnaby". Lets the hero speak in their own voice and the narrator
+  /// act everyone else. An entry whose count does not match the paragraph's
+  /// quotes is ignored at render time; see `domain/performance.dart`.
+  final List<String> speakers;
+
   bool get isEmpty =>
-      style.isEmpty && characterVoices.isEmpty && cues.every((c) => c.isEmpty);
+      style.isEmpty &&
+      characterVoices.isEmpty &&
+      cues.every((c) => c.isEmpty) &&
+      speakers.every((s) => s.trim().isEmpty);
 
   /// Stored as one JSON blob on the beat rather than three columns — this is
   /// direction for the voice, never queried, and it travels as a unit.
@@ -123,6 +133,7 @@ class NarrationNotes {
     'style': style,
     'voices': characterVoices,
     'cues': [for (final c in cues) c.encode()],
+    'speakers': speakers,
   };
 
   static NarrationNotes fromJson(Map<String, dynamic> json) => NarrationNotes(
@@ -134,6 +145,10 @@ class NarrationNotes {
     cues: [
       for (final c in (json['cues'] as List<dynamic>? ?? const []))
         NarrationCue.parse(c.toString()),
+    ],
+    speakers: [
+      for (final s in (json['speakers'] as List<dynamic>? ?? const []))
+        s.toString(),
     ],
   );
 

@@ -72,6 +72,10 @@ class GeminiProvider implements AiProvider {
         'type': 'ARRAY',
         'items': {'type': 'STRING'},
       },
+      'dialogue_speakers': {
+        'type': 'ARRAY',
+        'items': {'type': 'STRING'},
+      },
     },
     'required': storySegmentFields,
   };
