@@ -40,7 +40,6 @@ class StoryChaptersScreen extends ConsumerStatefulWidget {
 }
 
 class _StoryChaptersScreenState extends ConsumerState<StoryChaptersScreen> {
-  static const int _maxChapters = 6;
   bool _building = false;
   bool _active = true;
 
@@ -103,9 +102,13 @@ class _StoryChaptersScreenState extends ConsumerState<StoryChaptersScreen> {
       }
       var beats = await repo.loadBeats(series.id);
       var first = true;
+      // As many chapters as this story is meant to have, asked of the engine
+      // that decides it. This screen used to keep its own constant six and
+      // stop there, so a week-long story — seven, one a night — always ended
+      // a night early with nothing to say it was unfinished.
       while (_active &&
           mounted &&
-          beats.length < _maxChapters &&
+          beats.length < engine.chaptersFor(series, child) &&
           !(beats.isNotEmpty && beats.last.isFinal)) {
         final isOpening = beats.isEmpty && first;
         await engine.takeTurn(

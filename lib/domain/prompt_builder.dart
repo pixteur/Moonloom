@@ -59,7 +59,11 @@ class PromptBuilder {
         'pronounced, so a voice reading the story needs them.',
       )
       ..writeln(
-        'Target length per chapter: ${_lengthFor(req.child.detailLevel)}.',
+        // The story's own length, as the engine counts chapters by. Reading
+        // the child's default here while the engine read the story's would
+        // size a week's chapters for a mini whenever the two disagreed.
+        'Target length per chapter: '
+        '${_lengthFor(req.series.detailLevel ?? req.child.detailLevel)}.',
       )
       ..writeln(
         req.mustConclude

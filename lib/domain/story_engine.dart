@@ -104,6 +104,25 @@ class StoryEngine {
   /// A week of bedtimes. The point of a long story is that it lasts one.
   static const int _weekOfChapters = 7;
 
+  /// How long *this story* is meant to be.
+  ///
+  /// The story's own setting, saved when it was created, and the child's
+  /// current default only for stories from before stories carried one. It
+  /// used to be the child's default every time, so changing Mia's preferred
+  /// length mid-week would have changed the length of a week already under
+  /// way.
+  DetailLevel lengthOf(Series series, ChildProfile child) =>
+      series.detailLevel ?? child.detailLevel;
+
+  /// How many chapters this story will have — the number to keep asking for.
+  ///
+  /// The chapter screen used to keep its own count, a constant six, and stop
+  /// there; a week is seven, so every week-long story ended on its sixth
+  /// night with nothing to say it was unfinished. The screen asks this now, so
+  /// the length is decided in one place.
+  int chaptersFor(Series series, ChildProfile child) =>
+      _ceilingFor(lengthOf(series, child));
+
   /// Whether a generated chapter gets a second, editorial pass before it is
   /// saved. Costs one extra call per chapter, so tests turn it off.
   final bool _refinePass;
@@ -219,8 +238,8 @@ class StoryEngine {
       interests: interests,
       chosenTwist: chosenTwist,
       chapterNumber: ctx.nextSeq + 1,
-      maxChapters: _ceilingFor(child.detailLevel),
-      minChapters: _floorFor(child.detailLevel),
+      maxChapters: _ceilingFor(lengthOf(series, child)),
+      minChapters: _floorFor(lengthOf(series, child)),
       worldPremise: world?.premise ?? '',
       cast: cast,
       castChanges: castChanges,

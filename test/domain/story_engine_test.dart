@@ -390,6 +390,71 @@ void main() {
       expect(beat.openThreads, isEmpty);
     });
 
+    // The two tests above drive the engine with their own loop, and the engine
+    // was right all along: seven. The chapter screen drove it with a different
+    // loop holding a constant six, so every week-long story stopped on its
+    // sixth night. This is that loop, asking the engine how many to write.
+    test(
+      'driven the way the chapter screen drives it, a week is seven',
+      () async {
+        final engine = StoryEngine(ai: _NeverEndsProvider(), repo: repo);
+        final longReader = child.copyWith(detailLevel: DetailLevel.long);
+        final beats = <Beat>[];
+        while (beats.length < engine.chaptersFor(series, longReader) &&
+            !(beats.isNotEmpty && beats.last.isFinal)) {
+          beats.add(
+            await engine.takeTurn(
+              child: longReader,
+              series: series,
+              intent: beats.isEmpty ? StoryIntent.dice : StoryIntent.continued,
+            ),
+          );
+        }
+        expect(beats, hasLength(7));
+        expect(beats.last.isFinal, isTrue);
+        expect(beats.take(6).where((b) => b.isFinal), isEmpty);
+      },
+    );
+
+    test('each length asks for its own number of chapters', () {
+      final engine = StoryEngine(ai: _NeverEndsProvider(), repo: repo);
+      int count(DetailLevel level) =>
+          engine.chaptersFor(series, child.copyWith(detailLevel: level));
+      expect(count(DetailLevel.short), 1);
+      expect(count(DetailLevel.medium), 4);
+      expect(count(DetailLevel.long), 7);
+    });
+
+    // A story is as long as it was made to be. The child's default only
+    // decides the length of the *next* story; changing it mid-week must not
+    // turn a week already under way into a mini.
+    test("the story's own length wins over the child's default", () {
+      final engine = StoryEngine(ai: _NeverEndsProvider(), repo: repo);
+      // Built rather than copied: a story's length is fixed when it is made,
+      // so copyWith deliberately has no way to change it.
+      const week = Series(
+        id: 's1',
+        childId: 'c1',
+        title: 'Cloud Pirates',
+        theme: StoryTheme.cozy,
+        detailLevel: DetailLevel.long,
+      );
+      final nowPrefersMinis = child.copyWith(detailLevel: DetailLevel.short);
+      expect(engine.chaptersFor(week, nowPrefersMinis), 7);
+    });
+
+    test('a story from before stories had a length uses the child', () {
+      final engine = StoryEngine(ai: _NeverEndsProvider(), repo: repo);
+      expect(series.detailLevel, isNull, reason: 'the fixture is old-style');
+      expect(
+        engine.chaptersFor(
+          series,
+          child.copyWith(detailLevel: DetailLevel.long),
+        ),
+        7,
+      );
+    });
+
     test('a medium story still ends before a long one', () async {
       final engine = StoryEngine(ai: _NeverEndsProvider(), repo: repo);
       Beat beat = await engine.takeTurn(
