@@ -115,10 +115,10 @@ class NarrationNotes {
   /// One cue per paragraph of the chapter, in order.
   final List<NarrationCue> cues;
 
-  /// Per paragraph, in order: who speaks each quoted line, comma separated —
-  /// "Pip, Barnaby". Lets the hero speak in their own voice and the narrator
-  /// act everyone else. An entry whose count does not match the paragraph's
-  /// quotes is ignored at render time; see `domain/performance.dart`.
+  /// Who says each quoted line, as `Name: the first few words of the line`,
+  /// one entry per line in order. Lets the hero speak in their own voice and
+  /// the narrator act everyone else. Matched to lines by their words, never
+  /// by position; see `attributeQuotes` in domain/performance.dart.
   final List<String> speakers;
 
   bool get isEmpty =>

@@ -160,4 +160,20 @@ void main() {
       expect(prompt, contains('reference image shows Pip'));
     });
   });
+
+  // One cover and one picture per chapter, as asked — every night of a week
+  // has a picture of its own. Change `chaptersPerPicture` to draw fewer.
+  group('which chapters get a picture', () {
+    test('every chapter of a week', () {
+      expect(chaptersToIllustrate(7), [0, 1, 2, 3, 4, 5, 6]);
+    });
+
+    test('a mini episode gets its one chapter drawn', () {
+      expect(chaptersToIllustrate(1), [0]);
+    });
+
+    test('an empty story gets none', () {
+      expect(chaptersToIllustrate(0), isEmpty);
+    });
+  });
 }

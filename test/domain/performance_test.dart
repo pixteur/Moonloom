@@ -155,4 +155,81 @@ void main() {
       expect(parts, hasLength(1));
     });
   });
+
+  // Attributions are matched to lines by their opening words, never by
+  // position: real chapters came back with 13 entries for 10 paragraphs, then
+  // 19 for 14, and a list matched by position puts every line after the first
+  // miscount in the wrong character's mouth.
+  group('who said each line, by its words', () {
+    const paragraphs = [
+      'The sea was calm.',
+      '"Look at the moon!" said Pip.',
+      '"Hm, it is round," said Barnaby. "Like a pearl," Coral sighed.',
+    ];
+
+    test('each line goes to the character who says it', () {
+      expect(
+        attributeQuotes(paragraphs, const [
+          'Pip: Look at the moon',
+          'Barnaby: Hm, it is round',
+          'Coral: Like a pearl',
+        ]),
+        ['', 'Pip', 'Barnaby, Coral'],
+      );
+    });
+
+    test('an extra entry does not shift anyone', () {
+      expect(
+        attributeQuotes(paragraphs, const [
+          'Lumina: Something never said',
+          'Pip: Look at the moon',
+          'Barnaby: Hm, it is round',
+          'Coral: Like a pearl',
+        ]),
+        ['', 'Pip', 'Barnaby, Coral'],
+      );
+    });
+
+    test('a missing entry loses one line to the narrator, no more', () {
+      expect(
+        attributeQuotes(paragraphs, const [
+          'Pip: Look at the moon',
+          'Coral: Like a pearl',
+        ]),
+        ['', 'Pip', '?, Coral'],
+      );
+    });
+
+    test('two lines opening alike go to their own speakers', () {
+      expect(
+        attributeQuotes(const ['"Oh!" "Oh!"'], const ['Pip: Oh', 'Coral: Oh']),
+        ['Pip, Coral'],
+      );
+    });
+
+    test('punctuation and case do not stop a match', () {
+      expect(
+        attributeQuotes(
+          const ['“LOOK, at the moon…”'],
+          const ['Pip: look at the moon'],
+        ),
+        ['Pip'],
+      );
+    });
+
+    test('an unclaimed line is read by the narrator, plainly', () {
+      final parts = performParagraphs(
+        '"Who goes there?"',
+        speakers: attributeQuotes(const ['"Who goes there?"'], const []),
+        heroName: 'Pip',
+      );
+      expect(parts.single.voice, PartVoice.narrator);
+      expect(parts.single.style, isNot(contains('voicing')));
+    });
+
+    test('quotes are counted however they are marked', () {
+      expect(quotesIn('“Un,” «deux» "trois"'), 3);
+      expect(quotesIn('No dialogue here.'), 0);
+    });
+  });
 }

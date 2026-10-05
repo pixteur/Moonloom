@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 
 import '../../domain/models/narration.dart';
+import '../../domain/performance.dart';
 import '../ai/provider_exceptions.dart';
 import '../ai/story_segment_codec.dart';
 import '../secrets/secret_store.dart';
@@ -56,6 +57,8 @@ class OpenAiTtsSynthesizer implements TtsSynthesizer {
     TtsVoicePref voice = const TtsVoicePref(),
     NarrationCue cue = const NarrationCue(),
     String standingDirection = '',
+    // A single voice per request: the performance is read as one text.
+    List<SpeechPart> parts = const [],
   }) async {
     final key = await _secrets.readKey(keyName);
     if (key == null || key.isEmpty) {

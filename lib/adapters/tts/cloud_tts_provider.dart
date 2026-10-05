@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:audioplayers/audioplayers.dart' hide AudioCache;
 
 import '../../domain/models/narration.dart';
+import '../../domain/performance.dart';
 import '../ai/rate_limit_retry.dart';
 import '../audio/audio_kind.dart';
 import 'audio_polish.dart';
@@ -29,6 +30,7 @@ class CloudTtsProvider implements TtsProvider {
     this._id, {
     AudioCache? cache,
     AudioPlayer? player,
+    this.heroName,
   }) : _cache = cache, // ignore: prefer_initializing_formals
        _player = player ?? AudioPlayer() {
     _completeSub = _player.onPlayerComplete.listen((_) => _advance());
@@ -63,6 +65,29 @@ class CloudTtsProvider implements TtsProvider {
   /// The chapter's standing direction, applied to every chunk on top of that
   /// chunk's own cue.
   NarrationNotes _notes = const NarrationNotes();
+
+  /// Who speaks their own lines in a voice of their own, or null when the
+  /// narrator reads everyone. Only a voice engine that can change speaker
+  /// within a request acts on it; see `domain/performance.dart`.
+  final String? heroName;
+
+  /// The chunk as a performance: narration, the hero's lines, and the
+  /// narrator acting everyone else, each with its own delivery. Empty for a
+  /// chunk that does not line up with whole paragraphs, which is then read in
+  /// one voice as before.
+  List<SpeechPart> _performance(NarratedChunk chunk) {
+    final cues = chunk.paragraphCues;
+    if (cues == null) return const [];
+    return performParagraphs(
+      chunk.text,
+      cues: cues,
+      speakers: chunk.speakers,
+      characterVoices: _notes.characterVoices,
+      standingStyle: _notes.style,
+      heroName: heroName,
+    );
+  }
+
   final Map<int, Future<Uint8List>> _jobs = {};
   int _i = 0;
   bool _active = false;
@@ -153,6 +178,7 @@ class CloudTtsProvider implements TtsProvider {
         voice: voice,
         cue: chunk.cue,
         standingDirection: _notes.asStandingDirection(),
+        parts: _performance(chunk),
       ),
       cancelled: cancelled ?? () => false,
     );

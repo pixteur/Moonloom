@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 
 import '../../domain/models/narration.dart';
+import '../../domain/performance.dart';
 import '../ai/provider_exceptions.dart';
 import '../secrets/secret_store.dart';
 import 'tts_provider.dart';
@@ -95,6 +96,8 @@ class ElevenLabsTtsSynthesizer implements TtsSynthesizer {
     TtsVoicePref voice = const TtsVoicePref(),
     NarrationCue cue = const NarrationCue(),
     String standingDirection = '',
+    // A single voice per request: the performance is read as one text.
+    List<SpeechPart> parts = const [],
   }) async {
     final key = await _secrets.readKey(keyName);
     if (key == null || key.isEmpty) {

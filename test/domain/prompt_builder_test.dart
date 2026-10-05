@@ -346,4 +346,16 @@ void main() {
       expect(p.user, contains('Never rename'));
     });
   });
+
+  // Measured before this existed: 6% of the library's words were dialogue
+  // and 36 of 64 chapters had none, so the hero had nothing to say.
+  group('dialogue', () {
+    test('the writer is asked for the configured share', () {
+      expect(dialogueBrief(), contains('${(dialogueShare * 100).round()}%'));
+    });
+
+    test('and for the hero to have lines of their own', () {
+      expect(dialogueBrief(), contains('hero'));
+    });
+  });
 }

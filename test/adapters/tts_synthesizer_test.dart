@@ -108,9 +108,11 @@ void main() {
           200,
         );
       });
+      // Raw PCM is what the older models return; 3.8 answers with a WAV.
       final s = GeminiTtsSynthesizer(
         secrets: _FakeSecrets('sk-test'),
         httpClient: client,
+        model: 'gemini-2.5-flash-preview-tts',
       );
       expect(s.mimeType, 'audio/wav');
       final wav = await s.synthesize('hello');

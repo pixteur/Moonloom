@@ -65,6 +65,7 @@ class PromptBuilder {
         'Target length per chapter: '
         '${_lengthFor(req.series.detailLevel ?? req.child.detailLevel)}.',
       )
+      ..writeln(dialogueBrief())
       ..writeln(
         req.mustConclude
             ? (req.chapterNumber == 1
@@ -451,14 +452,13 @@ class PromptBuilder {
         'story should be.',
       )
       ..writeln(
-        '- "dialogue_speakers": exactly one entry per paragraph, in the same '
-        'order as "narration_cues". Each entry names who speaks each quoted '
-        'line in that paragraph, in the order the quotes appear, separated by '
-        'commas — for example "Pip, Barnaby" for a paragraph where Pip speaks '
-        "first and Barnaby answers. Use each character's name exactly as it "
-        'appears in "character_voices". Leave the entry empty when the '
-        'paragraph has no dialogue. Count the quotes: one name per quoted '
-        'line, no more and no fewer.',
+        '- "dialogue_speakers": one entry for EVERY quoted line in the '
+        'chapter, in the order the lines appear. Each entry is the '
+        "speaker's name, a colon, then the first four or five words of what "
+        'they say, copied exactly — for example "Pip: Look at the moon" or '
+        '"Barnaby: Careful now, little one". Use each name exactly as it '
+        'appears in "character_voices". Return an empty array if nobody '
+        'speaks.',
       )
       ..writeln(
         'Describe the SOUND in ordinary words. Never emit SSML, audio '
@@ -831,4 +831,26 @@ class PromptBuilder {
     'ja' => 'Japanese',
     _ => code,
   };
+}
+
+/// How much of a chapter should be characters speaking, as a share of its
+/// words. The one number to change to ask for more or less dialogue.
+///
+/// About a third. Measured across Mia's library before this existed: dialogue
+/// was 6% of all words, the median chapter had none, and 36 of 64 chapters had
+/// no dialogue at all — so the hero had almost nothing to say in a voice of
+/// their own, and the narrator nobody to act. A third is enough for the
+/// characters to come alive when read aloud without turning a bedtime story
+/// into a play; it is a judgement, not a standard, which is why it is a
+/// constant rather than buried in a sentence.
+const double dialogueShare = 0.3;
+
+/// The writer's instruction for [dialogueShare].
+String dialogueBrief() {
+  final percent = (dialogueShare * 100).round();
+  return 'Let the characters talk. Roughly $percent% of the chapter\'s words '
+      'should be dialogue — characters speaking to each other in quotation '
+      'marks — and the rest narration. Give the hero lines of their own. Keep '
+      'the closing paragraphs mostly narration, so the chapter quietens as it '
+      'ends.';
 }

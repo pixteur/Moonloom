@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import '../../domain/models/narration.dart';
+import '../../domain/performance.dart';
 import 'tts_provider.dart';
 
 /// Turns text into playable audio bytes (mp3 or wav). Pure I/O — no audio
@@ -20,12 +21,18 @@ abstract class TtsSynthesizer {
   /// engine renders it in its own dialect, or ignores it. It never reaches the
   /// spoken text: an engine handed direction it doesn't understand would read
   /// it out loud.
+  ///
+  /// [parts] is the same [text] as a performance — who says each stretch and
+  /// how — for an engine that can change speaker and delivery within one
+  /// request. Joined, the parts are exactly [text]. An engine that cannot use
+  /// them reads [text] as it always has.
   Future<Uint8List> synthesize(
     String text, {
     String language = 'en',
     TtsVoicePref voice = const TtsVoicePref(),
     NarrationCue cue = const NarrationCue(),
     String standingDirection = '',
+    List<SpeechPart> parts = const [],
   });
 }
 

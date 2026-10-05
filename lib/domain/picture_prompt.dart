@@ -278,14 +278,17 @@ String? portraitSubject({
   return candidates[hash % candidates.length];
 }
 
-/// Which chapters of a story get a picture.
+/// How many chapters share one picture: 1 means every chapter gets its own.
 ///
-/// Restrained on purpose, and not only for cost. A child looking at a picture
-/// is not listening to the story, and one every few paragraphs turns a reading
-/// into a picture book being flicked through. A week-long story gets three —
-/// beginning, middle, end — and everything shorter gets less.
-List<int> chaptersToIllustrate(int chapterCount) {
-  if (chapterCount <= 1) return const [];
-  if (chapterCount <= 4) return [chapterCount ~/ 2];
-  return [0, chapterCount ~/ 2, chapterCount - 1];
-}
+/// The one number to change to draw fewer. It was three pictures for a week —
+/// beginning, middle, end — out of caution about cost and about a child
+/// looking rather than listening; one per chapter was asked for instead, so
+/// each night has a picture of its own. 2 would give every other chapter.
+const int chaptersPerPicture = 1;
+
+/// Which chapters of a story get a picture, as 0-based chapter indexes.
+///
+/// The cover is drawn separately and always; this is only the chapters.
+List<int> chaptersToIllustrate(int chapterCount) => [
+  for (var i = 0; i < chapterCount; i += chaptersPerPicture) i,
+];

@@ -24,6 +24,8 @@
 /// spoken — the property every other rule here exists to protect.
 library;
 
+import 'dart:math';
+
 import 'cast_line.dart';
 import 'models/narration.dart';
 
@@ -154,6 +156,90 @@ List<SpeechPart> performParagraphs(
   }
   return out;
 }
+
+/// How many quoted lines a paragraph holds.
+int quotesIn(String paragraph) => _runs(paragraph).where((r) => r.$2).length;
+
+/// Per paragraph, the speaker of each quoted line, comma separated — resolved
+/// by matching each line's opening words against the editorial pass's
+/// attributions, which read `Name: the first few words of the line`.
+///
+/// Anchored to words, not to positions. The first design asked for one entry
+/// per paragraph, then per quote; real chapters came back with 13 entries for
+/// 10 paragraphs and then 19 for 14, a mixture of both — and a list matched by
+/// position puts every line after the first miscount in the wrong mouth. A
+/// line found by what it says can only be lost, never misassigned: a quote
+/// no attribution claims is read by the narrator, in the paragraph's own
+/// delivery.
+///
+/// Attributions are consumed in order, searching forward from the last one
+/// used, so two lines that both open "Oh" go to their own speakers, and one
+/// missing or extra entry costs one line rather than the rest of the chapter.
+List<String> attributeQuotes(
+  List<String> paragraphs,
+  List<String> attributions,
+) {
+  final claims = <(String, List<String>)>[];
+  for (final entry in attributions) {
+    final colon = entry.indexOf(':');
+    if (colon <= 0) continue;
+    final name = entry.substring(0, colon).trim();
+    final words = _openingWords(entry.substring(colon + 1));
+    if (name.isNotEmpty && words.isNotEmpty) claims.add((name, words));
+  }
+  final used = List<bool>.filled(claims.length, false);
+  var cursor = 0;
+
+  String? claim(String quote) {
+    final words = _openingWords(quote);
+    if (words.isEmpty) return null;
+    bool matches((String, List<String>) c) {
+      final k = [words.length, c.$2.length, _anchorWords].reduce(min);
+      for (var i = 0; i < k; i++) {
+        if (words[i] != c.$2[i]) return false;
+      }
+      return true;
+    }
+
+    for (final from in [cursor, 0]) {
+      for (var i = from; i < claims.length; i++) {
+        if (used[i] || !matches(claims[i])) continue;
+        used[i] = true;
+        cursor = i + 1;
+        return claims[i].$1;
+      }
+    }
+    return null;
+  }
+
+  return [
+    for (final paragraph in paragraphs)
+      [
+        for (final (run, isQuote) in _runs(paragraph))
+          if (isQuote) claim(run) ?? _unclaimed,
+      ].join(', '),
+  ];
+}
+
+/// How many opening words identify a line. Enough to tell two lines apart in
+/// practice; few enough that a model quoting them slightly loosely still
+/// matches on the words it did get right — a shorter line is compared on as
+/// many words as it has.
+const int _anchorWords = 4;
+
+/// Stands in for a line nobody claimed, so the per-paragraph count still
+/// lines up with the quotes. It matches no character and is never the hero,
+/// so the narrator reads that line plainly.
+const String _unclaimed = '?';
+
+/// A line's first words, lower-cased, letters and digits only.
+List<String> _openingWords(String s) => s
+    .toLowerCase()
+    .replaceAll(RegExp(r"[^\p{L}\p{N}' ]", unicode: true), ' ')
+    .split(RegExp(r'\s+'))
+    .where((w) => w.isNotEmpty)
+    .take(_anchorWords)
+    .toList();
 
 /// A paragraph as alternating narration and quoted runs, quote marks kept on
 /// the quoted run. An unclosed quote runs to the end of the paragraph, which

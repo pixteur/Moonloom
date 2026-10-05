@@ -15,19 +15,47 @@
 library;
 
 import '../../domain/models/narration.dart';
+import '../../domain/performance.dart';
 import 'audio_cache_key.dart';
 
 /// One synthesis request: the text to speak and the direction to speak it in.
 class NarratedChunk {
-  const NarratedChunk(this.text, this.cue);
+  const NarratedChunk(
+    this.text,
+    this.cue, {
+    this.paragraphCues,
+    this.speakers = const [],
+  });
 
   final String text;
   final NarrationCue cue;
 
+  /// Each paragraph of this chunk's own cue, in order — or null when the chunk
+  /// does not line up with whole paragraphs, which happens only to a chapter
+  /// long enough to be split mid-paragraph. A voice that can change delivery
+  /// part by part uses these; without them it reads the chunk in one voice.
+  final List<NarrationCue>? paragraphCues;
+
+  /// Each paragraph of this chunk's speakers, as the editorial pass wrote
+  /// them: who says each quoted line, comma separated.
+  final List<String> speakers;
+
   /// Mixed into the audio-cache key. The cue changes the audio without
   /// changing a word of the text, so a key built from the text alone would
-  /// replay the previous reading.
-  String get cacheSuffix => cue.isEmpty ? '' : '|${cue.encode()}';
+  /// replay the previous reading — and so do the speakers, once there are
+  /// any, because they decide whose voice a line is read in.
+  ///
+  /// Only once there are any. Every chapter recorded before speakers existed
+  /// keeps exactly the key it was saved under; a change that moved them all
+  /// would make a library of narration look deleted, which is the trap in
+  /// CLAUDE.md about changing voice.
+  String get cacheSuffix {
+    final direction = cue.isEmpty ? '' : '|${cue.encode()}';
+    final voices = speakers.any((s) => s.trim().isNotEmpty)
+        ? '|speakers=${speakers.join('/')}'
+        : '';
+    return '$direction$voices';
+  }
 
   @override
   String toString() => '${text.length} chars ${cue.isEmpty ? "-" : cue}';
@@ -49,12 +77,32 @@ List<NarratedChunk> narratedChunks(
       .toList();
   if (paragraphs.isEmpty) return const [];
 
+  // Who says each quoted line, found by its words rather than its position:
+  // a miscounted list then loses a line to the narrator instead of shifting
+  // every later line onto the wrong character. See `attributeQuotes`.
+  final perParagraph = notes.speakers.isEmpty
+      ? const <String>[]
+      : attributeQuotes(paragraphs, notes.speakers);
+  String speakerAt(int i) =>
+      i >= 0 && i < perParagraph.length ? perParagraph[i] : '';
+
   // With no direction at all, this must behave exactly like the reader does
   // today — same chunks, same cache keys, same request count.
   if (notes.cues.every((c) => c.isEmpty)) {
+    final pieces = sizeChunker(text);
+    final aligned = pieces.length == 1;
     return [
-      for (final chunk in sizeChunker(text))
-        NarratedChunk(chunk, notes.cueAt(-1)),
+      for (final chunk in pieces)
+        NarratedChunk(
+          chunk,
+          notes.cueAt(-1),
+          paragraphCues: aligned
+              ? [for (var j = 0; j < paragraphs.length; j++) notes.cueAt(-1)]
+              : null,
+          speakers: aligned
+              ? [for (var j = 0; j < paragraphs.length; j++) speakerAt(j)]
+              : const [],
+        ),
     ];
   }
 
@@ -73,8 +121,24 @@ List<NarratedChunk> narratedChunks(
         notes.cueAt(i).emotion != notes.cueAt(runStart).emotion;
     if (!endOfRun) continue;
     final run = paragraphs.sublist(runStart, i).join('\n\n');
-    for (final chunk in sizeChunker(run)) {
-      out.add(NarratedChunk(chunk, notes.cueAt(runStart)));
+    final pieces = sizeChunker(run);
+    // A run that fits one request lines up with its paragraphs exactly; one
+    // split by size does not, and is read in one voice rather than risk
+    // giving a line to the wrong paragraph's speaker.
+    final aligned = pieces.length == 1;
+    for (final chunk in pieces) {
+      out.add(
+        NarratedChunk(
+          chunk,
+          notes.cueAt(runStart),
+          paragraphCues: aligned
+              ? [for (var j = runStart; j < i; j++) notes.cueAt(j)]
+              : null,
+          speakers: aligned
+              ? [for (var j = runStart; j < i; j++) speakerAt(j)]
+              : const [],
+        ),
+      );
     }
     runStart = i;
   }
