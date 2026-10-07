@@ -188,6 +188,19 @@ polished once, on the way in. Anything going back over the cache uses
 `deClickNarration`, which is idempotent — `tool/polish_cache.dart` checks and
 reports this on every run, and backs files up before rewriting them.
 
+**Gemini's WAVs end with a C2PA manifest — never read "everything after
+byte 44" as sound.** Every 3.8 voice reply carries a `C2PA` chunk after its
+`data`: ~6 KB of signed Content Credentials. The polish read samples by
+position, played the manifest as ~126 ms of loud noise and saved it that way —
+the "pop of static at the end of paragraphs" and in the Lunii navigation. Two
+earlier fixes (gain clipping, a de-click) were real but aimed beside it. 3.8
+also returns a *complete WAV* even from `generateContent`, so wrapping its
+reply in another header nests one WAV inside another. Anything that reads
+samples by position goes through `plainWav` (adapters/audio/wav.dart) first;
+`tool/strip_c2pa.dart` repairs narration saved before, `tool/c2pa_scan.dart`
+finds it. Found by reading the chunk list, after the user said "it's how we
+are reading it" — the shape of every trap here: plausible, no error, wrong.
+
 **Verify against the real database or device, not just tests.** Both the
 migration bug and the download-badge bug passed every test and failed
 immediately in the app. `tool/` holds read-only probes for exactly this.

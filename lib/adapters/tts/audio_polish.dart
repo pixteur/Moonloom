@@ -28,6 +28,8 @@ library;
 import 'dart:math';
 import 'dart:typed_data';
 
+import '../audio/wav.dart';
+
 /// A run of speech, and the silence that follows it.
 class _Segment {
   _Segment(this.start, this.end);
@@ -64,8 +66,13 @@ const double _maxDriftDb = 4;
 /// Takes and returns a 16-bit PCM WAV. Anything else — an MP3 from ElevenLabs
 /// or OpenAI — is returned untouched, because the sample data is not ours to
 /// read without decoding it first.
-Uint8List polishNarration(Uint8List wav) {
-  if (!_isPcmWav(wav)) return wav;
+Uint8List polishNarration(Uint8List raw) {
+  if (!_isPcmWav(raw)) return raw;
+  // Only the sound. Everything below reads samples by position from byte 44,
+  // which is right only for a plain WAV — and Gemini's are not: each ends with
+  // a C2PA manifest that this function used to read, and save, as 126 ms of
+  // noise. That was the pop of static at the end of every paragraph.
+  final wav = plainWav(raw);
   final view = ByteData.sublistView(wav);
   final rate = view.getUint32(24, Endian.little);
   final channels = max(1, view.getUint16(22, Endian.little));
@@ -96,6 +103,7 @@ Uint8List polishNarration(Uint8List wav) {
   // lengthen; leave it exactly as the model sang it — but it has still been
   // de-clicked above, because a single run can tick just as loudly.
   if (segments.length < 2) {
+    _fadeOutEnd(samples, perChannel);
     return _wrap(Uint8List.sublistView(samples), wav);
   }
 
@@ -106,7 +114,29 @@ Uint8List polishNarration(Uint8List wav) {
   // enough to hear after it — measured, not supposed: the first pass alone
   // took forty-six steps down to twenty-seven.
   _deClick(out, perChannel);
+  _fadeOutEnd(out, perChannel);
   return _wrap(Uint8List.fromList(out.expand(_le16).toList()), wav);
+}
+
+/// How long the very end of a clip takes to fade to silence.
+const int _endFadeMs = 120;
+
+/// Fade the last [_endFadeMs] of a clip to exactly zero.
+///
+/// Every clip is followed by another, or by the end of the chapter, and a
+/// clip that stops on anything but zero steps to silence — which is a tick.
+/// After the C2PA manifest stopped being played as sound, fresh 3.8 clips
+/// were measured ending in ~300 ms of faint room tone (about -55 dBFS, up to
+/// 3 000 zero crossings a second): hiss, not voice. Fading the last 120 ms
+/// lands well inside that room tone, never on the last word, and every
+/// paragraph ends in silence.
+void _fadeOutEnd(Int16List s, int perSecond) {
+  final n = (perSecond * _endFadeMs ~/ 1000).clamp(0, s.length);
+  if (n < 2) return;
+  final start = s.length - n;
+  for (var i = 0; i < n; i++) {
+    s[start + i] = (s[start + i] * (1 - i / (n - 1))).round();
+  }
 }
 
 /// A jump bigger than this between two adjacent samples is a step, not speech.
@@ -188,8 +218,11 @@ double _peakNear(Int16List s, int from, int to) {
 /// The de-click can be repeated: a repaired step is a ramp, and a ramp has no
 /// jump left in it to find. So this is what to run on audio of unknown
 /// history, and it is the part that removes the static.
-Uint8List deClickNarration(Uint8List wav) {
-  if (!_isPcmWav(wav)) return wav;
+Uint8List deClickNarration(Uint8List raw) {
+  if (!_isPcmWav(raw)) return raw;
+  // Only the sound; see polishNarration. A manifest read as samples is
+  // exactly the noise this exists to remove.
+  final wav = plainWav(raw);
   final view = ByteData.sublistView(wav);
   final rate = view.getUint32(24, Endian.little);
   final channels = max(1, view.getUint16(22, Endian.little));
@@ -436,9 +469,20 @@ Int16List _rebuild(
     }
   }
 
-  // Keep whatever trailed the last segment, so a chapter does not end abruptly.
-  for (var j = segments.last.end; j < s.length; j++) {
-    out.add((s[j] * gainAt(j)).round().clamp(-32768, 32767));
+  // Keep whatever trailed the last segment, so a chapter does not end
+  // abruptly — but let it fade to true silence rather than stop on room tone.
+  //
+  // Measured on fresh 3.8 clips once the C2PA manifest was no longer being
+  // read as sound: 300 ms after the last word at about -55 dBFS, crossing zero
+  // up to 3 000 times a second — faint hiss, not voice. Cut off where the
+  // clip ends, that is a last whisper of static at the end of every
+  // paragraph; faded, the paragraph ends in silence. The last word's own
+  // decay is in the segment and is untouched.
+  final tailStart = segments.last.end;
+  final tailLength = s.length - tailStart;
+  for (var j = tailStart; j < s.length; j++) {
+    final fade = tailLength <= 1 ? 0.0 : 1 - (j - tailStart) / (tailLength - 1);
+    out.add((s[j] * gainAt(j) * fade).round().clamp(-32768, 32767));
   }
   return Int16List.fromList(out);
 }

@@ -207,4 +207,60 @@ void main() {
       );
     });
   });
+  // The pop of static at the end of every paragraph. Every WAV the Gemini 3.8
+  // voices return ends with a C2PA chunk — a ~6 KB Content Credentials
+  // manifest — and the polish read "everything after byte 44" as sound, so
+  // the manifest played as 126 ms of noise and was saved that way.
+  group('only the sound survives', () {
+    /// A tone, as samples.
+    Int16List tone(int n) =>
+        Int16List.fromList([for (var i = 0; i < n; i++) (i % 40 - 20) * 400]);
+
+    /// [wav] with a chunk appended after its data, as Google sends it.
+    Uint8List withChunk(Uint8List wav, String id, int size) {
+      final out = BytesBuilder()
+        ..add(wav)
+        ..add(id.codeUnits)
+        ..add(
+          Uint8List(4)..buffer.asByteData().setUint32(0, size, Endian.little),
+        )
+        ..add(Uint8List.fromList(List.filled(size, 0x7A)));
+      final bytes = out.toBytes();
+      // The RIFF size covers the extra chunk too, exactly as Google writes it.
+      bytes.buffer.asByteData().setUint32(4, bytes.length - 8, Endian.little);
+      return bytes;
+    }
+
+    final sound = tone(2400);
+    final plain = encodeWav(
+      WavAudio(samples: sound, sampleRate: 24000, channels: 1),
+    );
+
+    test('a C2PA manifest after the sound is dropped', () {
+      final google = withChunk(plain, 'C2PA', 6062);
+      final cleaned = plainWav(google);
+      expect(cleaned.length, plain.length, reason: '6 KB of manifest gone');
+      expect(decodeWav(cleaned).samples, sound);
+      expect(String.fromCharCodes(cleaned).contains('C2PA'), isFalse);
+    });
+
+    test('a WAV wrapped inside another WAV is unwrapped', () {
+      // What the old request path made of a 3.8 reply: a header of its own
+      // around a complete WAV, manifest and all.
+      final google = withChunk(plain, 'C2PA', 6062);
+      final nested = pcmToWav(google, sampleRate: 24000);
+      final cleaned = plainWav(nested);
+      expect(decodeWav(cleaned).samples, sound);
+      expect(cleaned.length, plain.length);
+    });
+
+    test('an already plain WAV comes back as the same bytes', () {
+      expect(identical(plainWav(plain), plain), isTrue);
+    });
+
+    test('something that is not a WAV is left alone', () {
+      final mp3 = Uint8List.fromList([0xFF, 0xFB, 0x90, 0x00, 1, 2, 3]);
+      expect(identical(plainWav(mp3), mp3), isTrue);
+    });
+  });
 }

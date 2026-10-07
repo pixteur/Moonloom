@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import '../../domain/models/narration.dart';
 import '../../domain/performance.dart';
 import '../ai/provider_exceptions.dart';
+import '../audio/wav.dart';
 import '../ai/story_segment_codec.dart';
 import '../secrets/secret_store.dart';
 import 'tts_provider.dart';
@@ -168,16 +169,7 @@ class GeminiTtsSynthesizer implements TtsSynthesizer {
         'No audio returned. ${extractApiError(response.body)}',
       );
     }
-    final bytes = base64.decode(data);
-    // 3.8 answers with a complete WAV. Should it ever answer headerless PCM,
-    // as the older models do, wrap it rather than hand the player raw bytes.
-    final isWav =
-        bytes.length > 4 &&
-        bytes[0] == 0x52 &&
-        bytes[1] == 0x49 &&
-        bytes[2] == 0x46 &&
-        bytes[3] == 0x46;
-    return isWav ? bytes : pcmToWav(bytes, sampleRate: 24000);
+    return _sound(base64.decode(data));
   }
 
   /// One part of the request. The text is the story's own words and nothing
@@ -275,9 +267,38 @@ class GeminiTtsSynthesizer implements TtsSynthesizer {
         'No audio returned. ${extractApiError(response.body)}',
       );
     }
-    final pcm = base64.decode(data);
-    return pcmToWav(pcm, sampleRate: _rateFrom(inline?['mimeType'] as String?));
+    final reply = base64.decode(data);
+    // The 3.8 models answer even this endpoint with a complete WAV where the
+    // older ones answered raw PCM. Wrapping that in a header of its own put a
+    // whole WAV inside another — a tick of header at the start and Google's
+    // C2PA manifest played as static at the end.
+    return _isRiff(reply)
+        ? _sound(reply)
+        : pcmToWav(
+            reply,
+            sampleRate: _rateFrom(inline?['mimeType'] as String?),
+          );
   }
+
+  static bool _isRiff(Uint8List b) =>
+      b.length > 4 &&
+      b[0] == 0x52 &&
+      b[1] == 0x49 &&
+      b[2] == 0x46 &&
+      b[3] == 0x46;
+
+  /// The sound Google sent, and nothing else.
+  ///
+  /// Every 3.8 WAV ends with a `C2PA` chunk: a ~6 KB signed Content
+  /// Credentials manifest marking the audio as AI-made. A RIFF reader skips
+  /// it; this app's polish did not, and played it as 126 ms of static at the
+  /// end of every clip. It is dropped here, at the door, so nothing downstream
+  /// can mistake it for sound. (The manifest signs the audio exactly as
+  /// returned; the polish changes that audio, so the signature could not have
+  /// survived anyway. The app says plainly elsewhere that stories and voices
+  /// are AI-made.)
+  static Uint8List _sound(Uint8List reply) =>
+      _isRiff(reply) ? plainWav(reply) : pcmToWav(reply, sampleRate: 24000);
 
   /// Parse the sample rate from a mime type like `audio/L16;rate=24000`.
   int _rateFrom(String? mime) {

@@ -71,13 +71,28 @@ void main() {
       },
     );
 
-    // It no longer comes back as the same object: a single unbroken run has no
-    // seams to even out and no breaks to lengthen, but it can still carry the
-    // steps the voice model leaves in its own output, so it is de-clicked like
-    // anything else. What must not change is the audio itself.
-    test('one unbroken run of clean speech comes back unchanged', () {
-      final one = wav(_speech(24000, 0.3));
-      expect(polishNarration(one), equals(one));
+    // A single unbroken run has no seams to even out and no breaks to
+    // lengthen, so its sound comes back as it was — except the last 120 ms,
+    // which fade to silence so the clip never stops on anything but zero.
+    test('one unbroken run of clean speech is untouched but for its end', () {
+      final source = _speech(24000, 0.3);
+      final out = _samplesOf(polishNarration(wav(source)));
+      const fade = 24000 * 120 ~/ 1000;
+      expect(out.length, source.length);
+      expect(
+        out.sublist(0, source.length - fade),
+        source.sublist(0, source.length - fade),
+      );
+      expect(out.last, 0, reason: 'every clip ends in silence');
+    });
+
+    test('every clip ends at exactly zero', () {
+      final two = wav([
+        ..._speech(24000, 0.3),
+        ..._silence(12000),
+        ..._speech(24000, 0.3, seed: 2),
+      ]);
+      expect(_samplesOf(polishNarration(two)).last, 0);
     });
 
     test('something too short to be a WAV does not throw', () {
@@ -390,5 +405,32 @@ void main() {
   test('an empty chapter does not throw', () {
     expect(polishNarration(Uint8List(0)).length, 0);
     expect(polishNarration(wav(const [])).length, 44);
+  });
+
+  // The root of the static: the manifest Google appends after the sound was
+  // read as samples and saved as audio. Whatever the polish does, it must
+  // only ever work on the sound.
+  test('a C2PA manifest after the sound never becomes sound', () {
+    final clean = wav([
+      ..._speech(24000, 0.3),
+      ..._silence(12000),
+      ..._speech(24000, 0.3),
+    ]);
+    final google = BytesBuilder()
+      ..add(clean)
+      ..add('C2PA'.codeUnits)
+      ..add(Uint8List(4)..buffer.asByteData().setUint32(0, 6062, Endian.little))
+      ..add(Uint8List.fromList(List.filled(6062, 0x7A)));
+    final bytes = google.toBytes();
+    bytes.buffer.asByteData().setUint32(4, bytes.length - 8, Endian.little);
+
+    final polished = polishNarration(bytes);
+    expect(String.fromCharCodes(polished).contains('C2PA'), isFalse);
+    // No 0x7A7A samples - the manifest's filler - anywhere in the output.
+    final samples = _samplesOf(polished);
+    expect(samples.where((s) => s == 0x7A7A), isEmpty);
+    // The de-click reads through the same door: same length as the clean
+    // file, so not one byte of the manifest came along.
+    expect(deClickNarration(bytes).length, clean.length);
   });
 }

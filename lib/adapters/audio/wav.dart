@@ -212,3 +212,86 @@ WavAudio joinWav(List<WavAudio> parts) {
 
 String _tag(Uint8List bytes, int offset) =>
     String.fromCharCodes(bytes, offset, offset + 4);
+
+/// [bytes] as the plainest WAV there is: a 44-byte header and the sound,
+/// nothing else — or [bytes] unchanged when they are not a WAV this can read.
+///
+/// The reason this exists is a pop of static at the end of every paragraph
+/// that took four attempts to find. Every WAV the Gemini 3.8 voices return
+/// carries a `C2PA` chunk after its sound — a signed Content Credentials
+/// manifest, about 6 KB, saying the audio is AI-made. A RIFF reader skips it.
+/// The polish did not use one: it took "everything after byte 44" as samples,
+/// and played the manifest as roughly 126 ms of digital noise at the end of
+/// every clip, then saved it that way. The de-click and the clipping fix were
+/// both real, and both aimed beside the point.
+///
+/// Two shapes are handled:
+///   * extra chunks after (or before) the sound — `C2PA`, `LIST`, `fact` —
+///     are dropped, because only `data` is sound;
+///   * a WAV *inside* another WAV's sound is unwrapped. The 3.8 voices return
+///     a complete WAV where the older ones returned raw PCM, and code that
+///     still wrapped the reply in a header of its own put one file inside
+///     another: a tick of header at the start, the manifest at the end.
+///
+/// Anything that reads samples by position must go through this first.
+Uint8List plainWav(Uint8List bytes) {
+  WavAudio audio;
+  try {
+    audio = decodeWav(bytes);
+  } on WavFormatException {
+    return bytes;
+  }
+  // A whole WAV hiding inside the sound: unwrap it, however deep.
+  for (var depth = 0; depth < 4; depth++) {
+    final inner = Uint8List.sublistView(audio.samples);
+    if (inner.length < 12 ||
+        String.fromCharCodes(inner, 0, 4) != 'RIFF' ||
+        String.fromCharCodes(inner, 8, 12) != 'WAVE') {
+      break;
+    }
+    try {
+      audio = decodeWav(Uint8List.fromList(inner));
+    } on WavFormatException {
+      break;
+    }
+  }
+  final plain = encodeWav(audio);
+  // Already plain: hand back the very same bytes, so a caller can tell
+  // "nothing to clean" from "cleaned" without comparing megabytes itself.
+  if (plain.length == bytes.length) {
+    var same = true;
+    for (var i = 0; i < plain.length; i++) {
+      if (plain[i] != bytes[i]) {
+        same = false;
+        break;
+      }
+    }
+    if (same) return bytes;
+  }
+  return plain;
+}
+
+/// 16-bit PCM as a WAV with the minimal 44-byte header.
+Uint8List encodeWav(WavAudio audio) {
+  final dataLength = audio.samples.length * 2;
+  final out = Uint8List(44 + dataLength);
+  final view = ByteData.sublistView(out);
+  void tag(int at, String s) => out.setRange(at, at + 4, s.codeUnits);
+  tag(0, 'RIFF');
+  view.setUint32(4, 36 + dataLength, Endian.little);
+  tag(8, 'WAVE');
+  tag(12, 'fmt ');
+  view.setUint32(16, 16, Endian.little);
+  view.setUint16(20, 1, Endian.little);
+  view.setUint16(22, audio.channels, Endian.little);
+  view.setUint32(24, audio.sampleRate, Endian.little);
+  view.setUint32(28, audio.sampleRate * audio.channels * 2, Endian.little);
+  view.setUint16(32, audio.channels * 2, Endian.little);
+  view.setUint16(34, 16, Endian.little);
+  tag(36, 'data');
+  view.setUint32(40, dataLength, Endian.little);
+  for (var i = 0; i < audio.samples.length; i++) {
+    view.setInt16(44 + i * 2, audio.samples[i], Endian.little);
+  }
+  return out;
+}
