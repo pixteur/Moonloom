@@ -197,8 +197,11 @@ earlier fixes (gain clipping, a de-click) were real but aimed beside it. 3.8
 also returns a *complete WAV* even from `generateContent`, so wrapping its
 reply in another header nests one WAV inside another. Anything that reads
 samples by position goes through `plainWav` (adapters/audio/wav.dart) first;
-`tool/strip_c2pa.dart` repairs narration saved before, `tool/c2pa_scan.dart`
-finds it. Found by reading the chunk list, after the user said "it's how we
+`tool/strip_c2pa.dart` repairs narration saved before. It finds the manifest
+by **correlation with a genuine one**, not by its text: the polish's level
+changes and the de-click (which smooths exactly what a manifest is full of)
+destroyed the text in 186 clips while leaving the noise audible — a
+text-based repair reported them clean. Found by reading the chunk list, after the user said "it's how we
 are reading it" — the shape of every trap here: plausible, no error, wrong.
 
 **Verify against the real database or device, not just tests.** Both the
