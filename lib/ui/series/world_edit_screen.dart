@@ -5,7 +5,11 @@ import '../../app_providers.dart';
 import '../../domain/models/series.dart';
 import '../../domain/models/story_character.dart';
 import '../../domain/models/world.dart';
+import '../../adapters/tts/gemini_voice_designer.dart';
+import '../../domain/cast_line.dart';
 import '../common/confirm_destructive.dart';
+import '../common/error_banner.dart';
+import 'voice_design_dialog.dart';
 import 'theme_picker.dart';
 import 'world_voice_picker.dart';
 
@@ -146,7 +150,12 @@ class _WorldEditScreenState extends ConsumerState<WorldEditScreen> {
                         ListTile(
                           dense: true,
                           contentPadding: EdgeInsets.zero,
-                          leading: const Icon(Icons.person_outline),
+                          leading: c.hasVoice
+                              ? Icon(
+                                  Icons.record_voice_over_rounded,
+                                  color: theme.colorScheme.primary,
+                                )
+                              : const Icon(Icons.person_outline),
                           title: Text(c.name),
                           subtitle: c.description.trim().isEmpty
                               ? null
@@ -156,10 +165,26 @@ class _WorldEditScreenState extends ConsumerState<WorldEditScreen> {
                                   overflow: TextOverflow.ellipsis,
                                 ),
                           onTap: () => _editCharacter(world.id, c),
-                          trailing: IconButton(
-                            icon: const Icon(Icons.person_remove_outlined),
-                            tooltip: 'Write ${c.name} out',
-                            onPressed: () => _removeCharacter(c),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: Icon(
+                                  c.hasVoice
+                                      ? Icons.record_voice_over_rounded
+                                      : Icons.mic_none_rounded,
+                                ),
+                                tooltip: c.hasVoice
+                                    ? "${c.name}'s voice"
+                                    : 'Give ${c.name} a voice',
+                                onPressed: () => _characterVoice(c, list),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.person_remove_outlined),
+                                tooltip: 'Write ${c.name} out',
+                                onPressed: () => _removeCharacter(c),
+                              ),
+                            ],
                           ),
                         ),
                     ],
@@ -245,6 +270,88 @@ class _WorldEditScreenState extends ConsumerState<WorldEditScreen> {
       );
     }
     ref.invalidate(charactersForWorldProvider(worldId));
+  }
+
+  /// Give a character a voice of their own, or take it back.
+  ///
+  /// One character per world: a voice request holds two speakers, the
+  /// narrator and one other, so a second voiced character could never be
+  /// heard. Giving Pip a voice therefore hands the role over from whoever had
+  /// it. The child is never given one — the narrator reads their lines; the
+  /// voice service refuses to design a child's voice, and the app should not
+  /// want one.
+  Future<void> _characterVoice(
+    StoryCharacter c,
+    List<StoryCharacter> cast,
+  ) async {
+    if (ref.read(voiceConfigProvider).engine != VoiceEngine.gemini) {
+      showErrorBanner(
+        context,
+        'Character voices need the Gemini storyteller — choose it in '
+        'Settings → Voice.',
+      );
+      return;
+    }
+    final child = ref.read(activeChildProvider);
+    if (child != null && foldedName(child.displayName) == foldedName(c.name)) {
+      showErrorBanner(
+        context,
+        "The storyteller reads ${c.name}'s lines. The app never makes a "
+        "voice for a child.",
+      );
+      return;
+    }
+    final svc = ref.read(characterServiceProvider);
+
+    if (c.hasVoice) {
+      final choice = await showDialog<String>(
+        context: context,
+        builder: (context) => SimpleDialog(
+          title: Text("${c.name}'s voice"),
+          children: [
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(context, 'redesign'),
+              child: const Text('Design a different voice'),
+            ),
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(context, 'narrator'),
+              child: Text('Let the storyteller play ${c.name} again'),
+            ),
+          ],
+        ),
+      );
+      if (choice == null || !mounted) return;
+      if (choice == 'narrator') {
+        await svc.update(c.copyWith(voiceId: ''));
+        ref.invalidate(charactersForWorldProvider(c.worldId));
+        return;
+      }
+    }
+
+    final voice = await showVoiceDesignDialog(
+      context,
+      title: 'A voice for ${c.name}',
+      name: c.name,
+      prompt: GeminiVoiceDesigner.characterPrompt(c.name, c.description),
+    );
+    if (voice == null) return;
+    // Hand the role over: whoever had a voice in this world goes back to the
+    // storyteller, because only one of them could ever be heard.
+    for (final other in cast) {
+      if (other.id != c.id && other.hasVoice) {
+        await svc.update(other.copyWith(voiceId: ''));
+      }
+    }
+    await svc.update(c.copyWith(voiceId: voice.id));
+    ref.invalidate(charactersForWorldProvider(c.worldId));
+    ref.invalidate(designedVoicesProvider);
+    if (mounted) {
+      showErrorBanner(
+        context,
+        '${c.name} now speaks in their own voice, from the next chapter '
+        'recorded.',
+      );
+    }
   }
 
   /// Remove a character from the world. They aren't simply deleted: the next

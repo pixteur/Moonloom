@@ -26,8 +26,10 @@ import 'adapters/tts/cloud_tts_provider.dart';
 import 'adapters/tts/device_tts_provider.dart';
 import 'adapters/tts/elevenlabs_tts_synthesizer.dart';
 import 'adapters/tts/gemini_tts_synthesizer.dart';
+import 'adapters/tts/gemini_voice_designer.dart';
 import 'adapters/tts/openai_tts_synthesizer.dart';
 import 'adapters/tts/tts_provider.dart';
+import 'domain/cast_line.dart';
 import 'domain/character_service.dart';
 import 'domain/models/beat.dart';
 import 'domain/models/child_profile.dart';
@@ -350,10 +352,38 @@ String? ttsKeyNameFor(VoiceEngine engine) => switch (engine) {
 };
 
 class VoiceConfig {
-  const VoiceConfig(this.engine, this.voiceName, [this.model = '']);
+  const VoiceConfig(
+    this.engine,
+    this.voiceName, [
+    this.model = '',
+    this.heroName,
+    this.heroVoice,
+  ]);
   final VoiceEngine engine;
   final String voiceName; // '' = engine default
   final String model; // '' = the adapter's own default
+
+  /// The one character in the active world with a voice of their own, and
+  /// that voice. Null when nobody has one — the narrator plays everyone.
+  final String? heroName;
+  final String? heroVoice;
+
+  /// Equal by value. The reader is rebuilt — and its playback stopped —
+  /// whenever this changes, and this is rebuilt whenever the world's cast is
+  /// re-read; without value equality, renaming a side character would cut a
+  /// story off mid-sentence.
+  @override
+  bool operator ==(Object other) =>
+      other is VoiceConfig &&
+      other.engine == engine &&
+      other.voiceName == voiceName &&
+      other.model == model &&
+      other.heroName == heroName &&
+      other.heroVoice == heroVoice;
+
+  @override
+  int get hashCode =>
+      Object.hash(engine, voiceName, model, heroName, heroVoice);
 }
 
 /// Resolves the active voice engine. Falls back to device TTS unless the chosen
@@ -484,11 +514,62 @@ final storyImagesProvider = FutureProvider.family<List<StoryImage>, String>(
 final storyVoiceProvider = Provider<VoiceConfig>((ref) {
   final cfg = ref.watch(voiceConfigProvider);
   final world = ref.watch(activeWorldProvider);
-  final wanted = world?.voiceName.trim() ?? '';
-  if (wanted.isEmpty || cfg.engine == VoiceEngine.device) return cfg;
-  if (!voicesFor(cfg.engine).contains(wanted)) return cfg;
-  return VoiceConfig(cfg.engine, wanted, cfg.model);
+  if (world == null || cfg.engine == VoiceEngine.device) return cfg;
+
+  // The world's storyteller: a prebuilt name this engine offers, or — for
+  // Gemini — a voice designed for this world. A designed id is not in the
+  // prebuilt list, and the first version of this check quietly ignored one.
+  final wanted = world.voiceName.trim();
+  // Designed voices and a second speaker exist only on the 3.8 models. On an
+  // older one chosen in settings, the world falls back to the plain narrator
+  // rather than sending a voice id the model will refuse.
+  final speaksParts =
+      cfg.engine == VoiceEngine.gemini &&
+      (cfg.model.isEmpty || cfg.model.startsWith('gemini-3.8'));
+  final narrator =
+      wanted.isNotEmpty &&
+          (voicesFor(cfg.engine).contains(wanted) ||
+              (speaksParts && isDesignedVoice(wanted)))
+      ? wanted
+      : cfg.voiceName;
+
+  // Who in this world speaks in a voice of their own — never the child, whose
+  // lines the narrator always reads. Only Gemini can hand a line to a second
+  // voice inside one recording.
+  StoryCharacter? voiced;
+  if (speaksParts) {
+    final child = ref.watch(activeChildProvider);
+    final cast =
+        ref.watch(charactersForWorldProvider(world.id)).asData?.value ??
+        const <StoryCharacter>[];
+    for (final c in cast) {
+      if (!c.hasVoice) continue;
+      if (child != null &&
+          foldedName(c.name) == foldedName(child.displayName)) {
+        continue;
+      }
+      voiced = c;
+      break;
+    }
+  }
+  return VoiceConfig(
+    cfg.engine,
+    narrator,
+    cfg.model,
+    voiced?.name,
+    voiced?.voiceId,
+  );
 });
+
+/// Designs voices from a description, in the parent's Google project.
+final voiceDesignerProvider = Provider<GeminiVoiceDesigner>(
+  (ref) => GeminiVoiceDesigner(secrets: ref.watch(secretStoreProvider)),
+);
+
+/// The voices this app has designed. Re-read after designing one.
+final designedVoicesProvider = FutureProvider<List<DesignedVoice>>(
+  (ref) => ref.watch(voiceDesignerProvider).list(),
+);
 
 /// The voices an engine offers by name. One list, used by the parent's picker
 /// in settings and by the child-facing one on a world.
@@ -570,9 +651,12 @@ TtsProvider _readerFor(Ref ref, VoiceConfig cfg) {
         model: cfg.model.isEmpty
             ? GeminiTtsSynthesizer.defaultModel
             : cfg.model,
+        heroName: cfg.heroName,
+        heroVoice: cfg.heroVoice,
       ),
       TtsProviderId.gemini,
       cache: cache,
+      heroName: cfg.heroName,
     ),
     VoiceEngine.device => DeviceTtsProvider(),
   };

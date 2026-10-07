@@ -126,6 +126,11 @@ class StoryCharacters extends Table {
   /// fox" describes a thousand foxes — so the picture is the specification.
   TextColumn get sheetFileKey => text().withDefault(const Constant(''))();
 
+  /// A voice of this character's own, designed from a description — a
+  /// `voice_…` id in the parent's Google project. Empty for the narrator to
+  /// play them, which is everyone by default and always the child.
+  TextColumn get voiceId => text().withDefault(const Constant(''))();
+
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 
   @override
@@ -287,7 +292,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 13;
+  int get schemaVersion => 14;
 
   /// The library's file name, under the user's documents folder.
   static const String fileName = 'moonloom.sqlite';
@@ -427,6 +432,16 @@ class AppDatabase extends _$AppDatabase {
           () => m.addColumn(childProfiles, childProfiles.photoKey),
         );
       }
+      // v13 → v14: a character with a voice of their own. Checked against
+      // every branch before taking 14 — none had used it.
+      if (from < 14) {
+        await _addColumnIfMissing(
+          // The SQL table is `characters`; `storyCharacters` is the Dart name.
+          'characters',
+          'voice_id',
+          () => m.addColumn(storyCharacters, storyCharacters.voiceId),
+        );
+      }
     },
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON');
@@ -485,6 +500,12 @@ class AppDatabase extends _$AppDatabase {
       await _ensureColumn(
         'child_profiles',
         'photo_key',
+        "TEXT NOT NULL DEFAULT ''",
+      );
+      await _ensureColumn(
+        // The SQL table is `characters`; `storyCharacters` is the Dart name.
+        'characters',
+        'voice_id',
         "TEXT NOT NULL DEFAULT ''",
       );
     },

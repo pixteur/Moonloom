@@ -287,6 +287,7 @@ class DriftStorageRepo implements StorageRepo {
             name: c.name,
             description: Value(c.description),
             sheetFileKey: Value(c.sheetFileKey),
+            voiceId: Value(c.voiceId),
           ),
         );
   }
@@ -302,6 +303,7 @@ class DriftStorageRepo implements StorageRepo {
     name: r.name,
     description: r.description,
     sheetFileKey: r.sheetFileKey,
+    voiceId: r.voiceId,
   );
 
   // ── Series ──────────────────────────────────────────────────────

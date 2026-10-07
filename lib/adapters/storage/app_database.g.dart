@@ -2496,6 +2496,18 @@ class $StoryCharactersTable extends StoryCharacters
     requiredDuringInsert: false,
     defaultValue: const Constant(''),
   );
+  static const VerificationMeta _voiceIdMeta = const VerificationMeta(
+    'voiceId',
+  );
+  @override
+  late final GeneratedColumn<String> voiceId = GeneratedColumn<String>(
+    'voice_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -2515,6 +2527,7 @@ class $StoryCharactersTable extends StoryCharacters
     name,
     description,
     sheetFileKey,
+    voiceId,
     createdAt,
   ];
   @override
@@ -2568,6 +2581,12 @@ class $StoryCharactersTable extends StoryCharacters
         ),
       );
     }
+    if (data.containsKey('voice_id')) {
+      context.handle(
+        _voiceIdMeta,
+        voiceId.isAcceptableOrUnknown(data['voice_id']!, _voiceIdMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -2603,6 +2622,10 @@ class $StoryCharactersTable extends StoryCharacters
         DriftSqlType.string,
         data['${effectivePrefix}sheet_file_key'],
       )!,
+      voiceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}voice_id'],
+      )!,
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -2626,6 +2649,11 @@ class CharacterRow extends DataClass implements Insertable<CharacterRow> {
   /// every time they appear. Text cannot pin a face down — "a small white
   /// fox" describes a thousand foxes — so the picture is the specification.
   final String sheetFileKey;
+
+  /// A voice of this character's own, designed from a description — a
+  /// `voice_…` id in the parent's Google project. Empty for the narrator to
+  /// play them, which is everyone by default and always the child.
+  final String voiceId;
   final DateTime createdAt;
   const CharacterRow({
     required this.id,
@@ -2633,6 +2661,7 @@ class CharacterRow extends DataClass implements Insertable<CharacterRow> {
     required this.name,
     required this.description,
     required this.sheetFileKey,
+    required this.voiceId,
     required this.createdAt,
   });
   @override
@@ -2643,6 +2672,7 @@ class CharacterRow extends DataClass implements Insertable<CharacterRow> {
     map['name'] = Variable<String>(name);
     map['description'] = Variable<String>(description);
     map['sheet_file_key'] = Variable<String>(sheetFileKey);
+    map['voice_id'] = Variable<String>(voiceId);
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
   }
@@ -2654,6 +2684,7 @@ class CharacterRow extends DataClass implements Insertable<CharacterRow> {
       name: Value(name),
       description: Value(description),
       sheetFileKey: Value(sheetFileKey),
+      voiceId: Value(voiceId),
       createdAt: Value(createdAt),
     );
   }
@@ -2669,6 +2700,7 @@ class CharacterRow extends DataClass implements Insertable<CharacterRow> {
       name: serializer.fromJson<String>(json['name']),
       description: serializer.fromJson<String>(json['description']),
       sheetFileKey: serializer.fromJson<String>(json['sheetFileKey']),
+      voiceId: serializer.fromJson<String>(json['voiceId']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
@@ -2681,6 +2713,7 @@ class CharacterRow extends DataClass implements Insertable<CharacterRow> {
       'name': serializer.toJson<String>(name),
       'description': serializer.toJson<String>(description),
       'sheetFileKey': serializer.toJson<String>(sheetFileKey),
+      'voiceId': serializer.toJson<String>(voiceId),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
@@ -2691,6 +2724,7 @@ class CharacterRow extends DataClass implements Insertable<CharacterRow> {
     String? name,
     String? description,
     String? sheetFileKey,
+    String? voiceId,
     DateTime? createdAt,
   }) => CharacterRow(
     id: id ?? this.id,
@@ -2698,6 +2732,7 @@ class CharacterRow extends DataClass implements Insertable<CharacterRow> {
     name: name ?? this.name,
     description: description ?? this.description,
     sheetFileKey: sheetFileKey ?? this.sheetFileKey,
+    voiceId: voiceId ?? this.voiceId,
     createdAt: createdAt ?? this.createdAt,
   );
   CharacterRow copyWithCompanion(StoryCharactersCompanion data) {
@@ -2711,6 +2746,7 @@ class CharacterRow extends DataClass implements Insertable<CharacterRow> {
       sheetFileKey: data.sheetFileKey.present
           ? data.sheetFileKey.value
           : this.sheetFileKey,
+      voiceId: data.voiceId.present ? data.voiceId.value : this.voiceId,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -2723,14 +2759,22 @@ class CharacterRow extends DataClass implements Insertable<CharacterRow> {
           ..write('name: $name, ')
           ..write('description: $description, ')
           ..write('sheetFileKey: $sheetFileKey, ')
+          ..write('voiceId: $voiceId, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, worldId, name, description, sheetFileKey, createdAt);
+  int get hashCode => Object.hash(
+    id,
+    worldId,
+    name,
+    description,
+    sheetFileKey,
+    voiceId,
+    createdAt,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2740,6 +2784,7 @@ class CharacterRow extends DataClass implements Insertable<CharacterRow> {
           other.name == this.name &&
           other.description == this.description &&
           other.sheetFileKey == this.sheetFileKey &&
+          other.voiceId == this.voiceId &&
           other.createdAt == this.createdAt);
 }
 
@@ -2749,6 +2794,7 @@ class StoryCharactersCompanion extends UpdateCompanion<CharacterRow> {
   final Value<String> name;
   final Value<String> description;
   final Value<String> sheetFileKey;
+  final Value<String> voiceId;
   final Value<DateTime> createdAt;
   final Value<int> rowid;
   const StoryCharactersCompanion({
@@ -2757,6 +2803,7 @@ class StoryCharactersCompanion extends UpdateCompanion<CharacterRow> {
     this.name = const Value.absent(),
     this.description = const Value.absent(),
     this.sheetFileKey = const Value.absent(),
+    this.voiceId = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -2766,6 +2813,7 @@ class StoryCharactersCompanion extends UpdateCompanion<CharacterRow> {
     required String name,
     this.description = const Value.absent(),
     this.sheetFileKey = const Value.absent(),
+    this.voiceId = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
@@ -2777,6 +2825,7 @@ class StoryCharactersCompanion extends UpdateCompanion<CharacterRow> {
     Expression<String>? name,
     Expression<String>? description,
     Expression<String>? sheetFileKey,
+    Expression<String>? voiceId,
     Expression<DateTime>? createdAt,
     Expression<int>? rowid,
   }) {
@@ -2786,6 +2835,7 @@ class StoryCharactersCompanion extends UpdateCompanion<CharacterRow> {
       if (name != null) 'name': name,
       if (description != null) 'description': description,
       if (sheetFileKey != null) 'sheet_file_key': sheetFileKey,
+      if (voiceId != null) 'voice_id': voiceId,
       if (createdAt != null) 'created_at': createdAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -2797,6 +2847,7 @@ class StoryCharactersCompanion extends UpdateCompanion<CharacterRow> {
     Value<String>? name,
     Value<String>? description,
     Value<String>? sheetFileKey,
+    Value<String>? voiceId,
     Value<DateTime>? createdAt,
     Value<int>? rowid,
   }) {
@@ -2806,6 +2857,7 @@ class StoryCharactersCompanion extends UpdateCompanion<CharacterRow> {
       name: name ?? this.name,
       description: description ?? this.description,
       sheetFileKey: sheetFileKey ?? this.sheetFileKey,
+      voiceId: voiceId ?? this.voiceId,
       createdAt: createdAt ?? this.createdAt,
       rowid: rowid ?? this.rowid,
     );
@@ -2829,6 +2881,9 @@ class StoryCharactersCompanion extends UpdateCompanion<CharacterRow> {
     if (sheetFileKey.present) {
       map['sheet_file_key'] = Variable<String>(sheetFileKey.value);
     }
+    if (voiceId.present) {
+      map['voice_id'] = Variable<String>(voiceId.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -2846,6 +2901,7 @@ class StoryCharactersCompanion extends UpdateCompanion<CharacterRow> {
           ..write('name: $name, ')
           ..write('description: $description, ')
           ..write('sheetFileKey: $sheetFileKey, ')
+          ..write('voiceId: $voiceId, ')
           ..write('createdAt: $createdAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -8332,6 +8388,7 @@ typedef $$StoryCharactersTableCreateCompanionBuilder =
       required String name,
       Value<String> description,
       Value<String> sheetFileKey,
+      Value<String> voiceId,
       Value<DateTime> createdAt,
       Value<int> rowid,
     });
@@ -8342,6 +8399,7 @@ typedef $$StoryCharactersTableUpdateCompanionBuilder =
       Value<String> name,
       Value<String> description,
       Value<String> sheetFileKey,
+      Value<String> voiceId,
       Value<DateTime> createdAt,
       Value<int> rowid,
     });
@@ -8398,6 +8456,11 @@ class $$StoryCharactersTableFilterComposer
 
   ColumnFilters<String> get sheetFileKey => $composableBuilder(
     column: $table.sheetFileKey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get voiceId => $composableBuilder(
+    column: $table.voiceId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -8459,6 +8522,11 @@ class $$StoryCharactersTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get voiceId => $composableBuilder(
+    column: $table.voiceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -8512,6 +8580,9 @@ class $$StoryCharactersTableAnnotationComposer
     column: $table.sheetFileKey,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get voiceId =>
+      $composableBuilder(column: $table.voiceId, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -8575,6 +8646,7 @@ class $$StoryCharactersTableTableManager
                 Value<String> name = const Value.absent(),
                 Value<String> description = const Value.absent(),
                 Value<String> sheetFileKey = const Value.absent(),
+                Value<String> voiceId = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => StoryCharactersCompanion(
@@ -8583,6 +8655,7 @@ class $$StoryCharactersTableTableManager
                 name: name,
                 description: description,
                 sheetFileKey: sheetFileKey,
+                voiceId: voiceId,
                 createdAt: createdAt,
                 rowid: rowid,
               ),
@@ -8593,6 +8666,7 @@ class $$StoryCharactersTableTableManager
                 required String name,
                 Value<String> description = const Value.absent(),
                 Value<String> sheetFileKey = const Value.absent(),
+                Value<String> voiceId = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => StoryCharactersCompanion.insert(
@@ -8601,6 +8675,7 @@ class $$StoryCharactersTableTableManager
                 name: name,
                 description: description,
                 sheetFileKey: sheetFileKey,
+                voiceId: voiceId,
                 createdAt: createdAt,
                 rowid: rowid,
               ),

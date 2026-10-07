@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../adapters/ai/provider_exceptions.dart';
+import '../../adapters/tts/gemini_voice_designer.dart';
 import '../../adapters/tts/voice_catalog.dart';
 import '../../app_providers.dart';
 import '../common/error_banner.dart';
+import 'voice_design_dialog.dart';
 
 /// Choose the storyteller for a world.
 ///
@@ -60,11 +62,32 @@ class _WorldVoicePickerState extends ConsumerState<WorldVoicePicker> {
     }
   }
 
+  /// Describe a storyteller, hear it, keep it — then it is this world's voice.
+  Future<void> _designStoryteller() async {
+    final voice = await showVoiceDesignDialog(
+      context,
+      title: 'Design a storyteller',
+      name: '',
+      prompt: '',
+      ideas: GeminiVoiceDesigner.narratorIdeas,
+    );
+    if (voice == null) return;
+    ref.invalidate(designedVoicesProvider);
+    widget.onChanged(voice.id);
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final engine = ref.watch(voiceConfigProvider).engine;
     final voices = voicesFor(engine);
+    // Voices designed in the parent's project. Only the Gemini voices can use
+    // them, and a list that fails to load (offline, no key) simply shows
+    // nothing rather than an error in the middle of a child's screen.
+    final designed = engine == VoiceEngine.gemini
+        ? ref.watch(designedVoicesProvider).asData?.value ??
+              const <DesignedVoice>[]
+        : const <DesignedVoice>[];
 
     if (engine == VoiceEngine.device || voices.isEmpty) {
       return Text(
@@ -108,6 +131,33 @@ class _WorldVoicePickerState extends ConsumerState<WorldVoicePicker> {
               ),
           ],
         ),
+        if (engine == VoiceEngine.gemini) ...[
+          const SizedBox(height: 16),
+          Text('Storytellers you designed', style: theme.textTheme.labelLarge),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final voice in designed)
+                _VoiceChip(
+                  label: voice.name,
+                  character: 'designed',
+                  selected: widget.value == voice.id,
+                  busy: _playing == voice.id,
+                  onTap: () {
+                    widget.onChanged(voice.id);
+                    _preview(voice.id);
+                  },
+                ),
+              ActionChip(
+                avatar: const Icon(Icons.auto_awesome, size: 16),
+                label: const Text('Design a storyteller'),
+                onPressed: _designStoryteller,
+              ),
+            ],
+          ),
+        ],
       ],
     );
   }
