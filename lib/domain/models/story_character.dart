@@ -53,3 +53,23 @@ class StoryCharacter {
   String get promptLine =>
       description.trim().isEmpty ? name : '$name — ${description.trim()}';
 }
+
+/// [cast] after giving [characterId] the voice [voiceId], with anyone else who
+/// had a voice handing it back.
+///
+/// One voiced character per world: a voice request holds two speakers, the
+/// narrator and one other, so a second voiced character could never be heard.
+/// An empty [voiceId] simply takes the voice away.
+List<StoryCharacter> castWithVoice(
+  List<StoryCharacter> cast,
+  String characterId,
+  String voiceId,
+) => [
+  for (final c in cast)
+    if (c.id == characterId)
+      c.copyWith(voiceId: voiceId)
+    else if (voiceId.isNotEmpty && c.hasVoice)
+      c.copyWith(voiceId: '')
+    else
+      c,
+];

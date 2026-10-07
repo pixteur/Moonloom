@@ -303,46 +303,81 @@ class _WorldEditScreenState extends ConsumerState<WorldEditScreen> {
     }
     final svc = ref.read(characterServiceProvider);
 
-    if (c.hasVoice) {
-      final choice = await showDialog<String>(
-        context: context,
-        builder: (context) => SimpleDialog(
-          title: Text("${c.name}'s voice"),
-          children: [
+    // The voices already designed, so one can be reused rather than paid for
+    // again — Pip's voice from one world is still Pip's voice in another. A
+    // list that will not load (offline) just means only "design" is offered.
+    var designed = const <DesignedVoice>[];
+    try {
+      designed = await ref.read(designedVoicesProvider.future);
+    } catch (_) {}
+    if (!mounted) return;
+
+    final choice = await showDialog<String>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: Text(c.hasVoice ? "${c.name}'s voice" : 'A voice for ${c.name}'),
+        children: [
+          if (designed.isNotEmpty)
             SimpleDialogOption(
-              onPressed: () => Navigator.pop(context, 'redesign'),
-              child: const Text('Design a different voice'),
+              onPressed: () => Navigator.pop(context, 'reuse'),
+              child: const Text('Use a voice you designed'),
             ),
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(context, 'design'),
+            child: Text(
+              c.hasVoice ? 'Design a different voice' : 'Design a new voice',
+            ),
+          ),
+          if (c.hasVoice)
             SimpleDialogOption(
               onPressed: () => Navigator.pop(context, 'narrator'),
               child: Text('Let the storyteller play ${c.name} again'),
             ),
-          ],
-        ),
-      );
-      if (choice == null || !mounted) return;
-      if (choice == 'narrator') {
-        await svc.update(c.copyWith(voiceId: ''));
-        ref.invalidate(charactersForWorldProvider(c.worldId));
-        return;
-      }
+        ],
+      ),
+    );
+    if (choice == null || !mounted) return;
+
+    if (choice == 'narrator') {
+      await svc.update(c.copyWith(voiceId: ''));
+      ref.invalidate(charactersForWorldProvider(c.worldId));
+      return;
     }
 
-    final voice = await showVoiceDesignDialog(
-      context,
-      title: 'A voice for ${c.name}',
-      name: c.name,
-      prompt: GeminiVoiceDesigner.characterPrompt(c.name, c.description),
-    );
-    if (voice == null) return;
-    // Hand the role over: whoever had a voice in this world goes back to the
-    // storyteller, because only one of them could ever be heard.
-    for (final other in cast) {
-      if (other.id != c.id && other.hasVoice) {
-        await svc.update(other.copyWith(voiceId: ''));
-      }
+    final DesignedVoice? voice;
+    if (choice == 'reuse') {
+      voice = await showDesignedVoicePicker(
+        context,
+        title: 'A voice for ${c.name}',
+        voices: designed,
+        current: c.voiceId,
+      );
+    } else {
+      voice = await showVoiceDesignDialog(
+        context,
+        title: 'A voice for ${c.name}',
+        name: c.name,
+        prompt: GeminiVoiceDesigner.characterPrompt(c.name, c.description),
+      );
     }
-    await svc.update(c.copyWith(voiceId: voice.id));
+    if (voice == null) return;
+    await _giveVoice(c, cast, voice.id);
+  }
+
+  /// [c] speaks in [voiceId] from now on.
+  ///
+  /// Hands the role over: whoever had a voice in this world goes back to the
+  /// storyteller, because only one of them could ever be heard.
+  Future<void> _giveVoice(
+    StoryCharacter c,
+    List<StoryCharacter> cast,
+    String voiceId,
+  ) async {
+    final svc = ref.read(characterServiceProvider);
+    final updated = castWithVoice(cast, c.id, voiceId);
+    for (var i = 0; i < cast.length; i++) {
+      if (updated[i].voiceId != cast[i].voiceId) await svc.update(updated[i]);
+    }
     ref.invalidate(charactersForWorldProvider(c.worldId));
     ref.invalidate(designedVoicesProvider);
     if (mounted) {

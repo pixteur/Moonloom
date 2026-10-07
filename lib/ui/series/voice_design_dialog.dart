@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../adapters/ai/provider_exceptions.dart';
 import '../../adapters/tts/gemini_voice_designer.dart';
 import '../../app_providers.dart';
+import '../common/error_banner.dart';
 
 /// Describe a voice, hear it, keep it.
 ///
@@ -203,6 +204,114 @@ class _VoiceDesignDialogState extends ConsumerState<_VoiceDesignDialog> {
             child: const Text('Use this voice'),
           ),
         ],
+      ],
+    );
+  }
+}
+
+/// Choose one of the voices already designed, hearing each first.
+///
+/// A designed voice is reused rather than designed again: it costs nothing
+/// more, and Pip's voice from one world is still Pip's voice in another.
+/// Returns the chosen voice, or null when cancelled.
+Future<DesignedVoice?> showDesignedVoicePicker(
+  BuildContext context, {
+  required String title,
+  required List<DesignedVoice> voices,
+  String current = '',
+}) => showDialog<DesignedVoice>(
+  context: context,
+  builder: (_) =>
+      _DesignedVoicePicker(title: title, voices: voices, current: current),
+);
+
+class _DesignedVoicePicker extends ConsumerStatefulWidget {
+  const _DesignedVoicePicker({
+    required this.title,
+    required this.voices,
+    required this.current,
+  });
+
+  final String title;
+  final List<DesignedVoice> voices;
+  final String current;
+
+  @override
+  ConsumerState<_DesignedVoicePicker> createState() =>
+      _DesignedVoicePickerState();
+}
+
+class _DesignedVoicePickerState extends ConsumerState<_DesignedVoicePicker> {
+  String? _playing;
+
+  /// Read a line in the voice. Through the same reader as any narration, so
+  /// it is cached afterwards and hearing it twice costs once.
+  Future<void> _hear(DesignedVoice voice) async {
+    setState(() => _playing = voice.id);
+    try {
+      await ref
+          .read(voicePreviewProvider(voice.id))
+          .speak(
+            // Dialogue rather than narration, because that is what a
+            // character's voice will be asked to say — and no "he" or "she",
+            // because characters are not all one or the other.
+            '"Look! The moon is wearing a hat tonight. Shall we follow it?"',
+          );
+    } catch (e) {
+      if (mounted) showErrorBanner(context, friendlyProviderError(e));
+    } finally {
+      if (mounted) setState(() => _playing = null);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return AlertDialog(
+      title: Text(widget.title),
+      content: SizedBox(
+        width: 420,
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            for (final voice in widget.voices)
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: IconButton(
+                  tooltip: 'Hear ${voice.name}',
+                  onPressed: _playing == null ? () => _hear(voice) : null,
+                  icon: _playing == voice.id
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.play_circle_outline_rounded),
+                ),
+                title: Text(voice.name),
+                subtitle: voice.prompt.isEmpty
+                    ? null
+                    : Text(
+                        voice.prompt,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                trailing: voice.id == widget.current
+                    ? Icon(
+                        Icons.check_rounded,
+                        color: theme.colorScheme.primary,
+                      )
+                    : null,
+                onTap: () => Navigator.pop(context, voice),
+              ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
       ],
     );
   }
